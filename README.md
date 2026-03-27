@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # skinnova
 
 A new Flutter project.
@@ -18,3 +19,6 @@ samples, guidance on mobile development, and a full API reference.
 =======
 skinova project
 >>>>>>> 382756b0a6cbcf55207b642b76d5321e888bb93e
+=======
+
+>>>>>>> origin/shahd-skinova
