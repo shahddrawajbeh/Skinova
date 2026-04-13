@@ -6,10 +6,12 @@ import 'main_navigation_screen.dart';
 
 class WelcomeReadyScreen extends StatefulWidget {
   final String userId;
+  final String userName;
 
   const WelcomeReadyScreen({
     super.key,
     required this.userId,
+    required this.userName,
   });
 
   @override
@@ -72,7 +74,8 @@ class _WelcomeReadyScreenState extends State<WelcomeReadyScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => MainNavigationScreen(userId: widget.userId),
+              builder: (_) => MainNavigationScreen(
+                  userId: widget.userId, userName: widget.userName),
             ),
           );
         });

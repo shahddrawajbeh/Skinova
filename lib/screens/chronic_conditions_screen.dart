@@ -22,7 +22,6 @@ class _ChronicConditionsScreenState extends State<ChronicConditionsScreen> {
   final int totalSteps = 10;
 
   String? selected;
-
   final List<Map<String, dynamic>> options = [
     {
       "title": "Rosacea",
@@ -37,11 +36,11 @@ class _ChronicConditionsScreenState extends State<ChronicConditionsScreen> {
       "icon": Icons.health_and_safety_outlined,
     },
     {
-      "title": "Atopic Dermatitis",
+      "title": "Atopic dermatitis",
       "icon": Icons.spa_outlined,
     },
     {
-      "title": "No, I don't",
+      "title": "None of these",
       "icon": Icons.check_circle_outline_rounded,
     },
   ];

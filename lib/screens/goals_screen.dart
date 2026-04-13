@@ -21,55 +21,53 @@ class _GoalsScreenState extends State<GoalsScreen> {
   final int totalSteps = 10;
 
   final Set<String> selectedGoals = {};
-
   final List<Map<String, dynamic>> goals = [
     {
-      "title": "Fix the concerns of my skin",
-      "icon": Icons.monitor_heart_outlined,
+      "title": "Scan and analyze my skin",
+      "icon": Icons.document_scanner_outlined,
       "enabled": true,
     },
     {
-      "title": "Track my current skincare routines",
-      "icon": Icons.fact_check_outlined,
+      "title": "Fix my skin concerns",
+      "icon": Icons.healing_outlined,
       "enabled": true,
     },
     {
-      "title": "Create new skincare routines",
-      "icon": Icons.bookmark_add_outlined,
+      "title": "Get personalized product recommendations",
+      "icon": Icons.recommend_outlined,
       "enabled": true,
     },
     {
-      "title": "Discover skincare products",
-      "icon": Icons.gps_fixed_rounded,
+      "title": "Build a skincare routine for my skin",
+      "icon": Icons.auto_fix_high_outlined,
       "enabled": true,
     },
     {
-      "title": "Monitor my progress with skin diary",
-      "icon": Icons.mood_outlined,
+      "title": "Track my skin progress over time",
+      "icon": Icons.insights_outlined,
       "enabled": true,
     },
     {
-      "title": "Educate myself about skincare",
-      "icon": Icons.menu_book_outlined,
+      "title": "Find safe products for my skin type",
+      "icon": Icons.verified_user_outlined,
       "enabled": true,
     },
     {
-      "title": "Learn more about my own skin",
-      "icon": Icons.account_tree_outlined,
+      "title": "Learn about ingredients and their effects",
+      "icon": Icons.science_outlined,
       "enabled": true,
     },
     {
-      "title": "Apply home treatments (e.g. masks)",
-      "icon": Icons.home_outlined,
+      "title": "Avoid ingredients that may irritate my skin",
+      "icon": Icons.block_outlined,
       "enabled": true,
     },
     {
-      "title": "Practice facial yoga (coming soon)",
-      "icon": Icons.fitness_center_outlined,
-      "enabled": false,
-    },
+      "title": "Compare products and choose the best one",
+      "icon": Icons.compare_arrows_outlined,
+      "enabled": true,
+    }
   ];
-
   void toggleGoal(String title) {
     setState(() {
       if (selectedGoals.contains(title)) {

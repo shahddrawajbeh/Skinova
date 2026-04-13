@@ -1,8 +1,7 @@
 // import 'package:flutter/material.dart';
 // import 'package:google_fonts/google_fonts.dart';
 // import 'package:video_player/video_player.dart';
-// import 'auth_screen.dart';
-// import 'auth_sheet.dart';
+// import 'auth_popup.dart';
 
 // class WelcomeScreen extends StatefulWidget {
 //   const WelcomeScreen({super.key});
@@ -12,10 +11,10 @@
 // }
 
 // class _WelcomeScreenState extends State<WelcomeScreen> {
-//   static const Color beetroot = Color(0xFF663F44);
-//   static const Color barelyMauve = Color(0xFFCCBDB9);
-//   static const Color softLight = Color(0xFFF6F1F0);
-//   static const Color softRose = Color(0xFFB08A90);
+//   static const Color beetroot = Color(0xFFAC9C90);
+//   static const Color barelyMauve = Color(0xFFD5C4BE);
+//   static const Color softLight = Color(0xFFF1E9E2);
+//   static const Color softRose = Color(0xFFC8CEC7);
 
 //   late VideoPlayerController _videoController;
 //   bool _isReady = false;
@@ -41,6 +40,39 @@
 //     }
 //   }
 
+//   void _openAuthPopup() {
+//     showGeneralDialog(
+//       context: context,
+//       barrierLabel: "Auth",
+//       barrierDismissible: true,
+//       barrierColor: Colors.black.withOpacity(0.22),
+//       transitionDuration: const Duration(milliseconds: 500),
+//       pageBuilder: (context, animation, secondaryAnimation) {
+//         return const AuthPopup();
+//       },
+//       transitionBuilder: (context, animation, secondaryAnimation, child) {
+//         final curved = CurvedAnimation(
+//           parent: animation,
+//           curve: Curves.easeOutCubic,
+//         );
+
+//         return FadeTransition(
+//           opacity: Tween<double>(begin: 0.0, end: 1.0).animate(curved),
+//           child: SlideTransition(
+//             position: Tween<Offset>(
+//               begin: const Offset(0, 0.18),
+//               end: Offset.zero,
+//             ).animate(curved),
+//             child: ScaleTransition(
+//               scale: Tween<double>(begin: 0.96, end: 1.0).animate(curved),
+//               child: child,
+//             ),
+//           ),
+//         );
+//       },
+//     );
+//   }
+
 //   @override
 //   void dispose() {
 //     _videoController.dispose();
@@ -53,7 +85,6 @@
 //       backgroundColor: softLight,
 //       body: Stack(
 //         children: [
-//           /// الفيديو بكامل الشاشة
 //           Positioned.fill(
 //             child: _isReady
 //                 ? FittedBox(
@@ -71,15 +102,11 @@
 //                     ),
 //                   ),
 //           ),
-
-//           /// طبقة خفيفة فوق الفيديو حتى ينسجم مع الثيم
 //           Positioned.fill(
 //             child: Container(
 //               color: beetroot.withOpacity(0.10),
 //             ),
 //           ),
-
-//           /// تدرج علوي خفيف
 //           Positioned.fill(
 //             child: DecoratedBox(
 //               decoration: BoxDecoration(
@@ -97,8 +124,6 @@
 //               ),
 //             ),
 //           ),
-
-//           /// تدرج سفلي قوي للنص والزر
 //           Positioned.fill(
 //             child: DecoratedBox(
 //               decoration: BoxDecoration(
@@ -117,15 +142,12 @@
 //               ),
 //             ),
 //           ),
-
 //           SafeArea(
 //             child: Padding(
 //               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
 //               child: Column(
 //                 children: [
 //                   const Spacer(),
-
-//                   /// النص
 //                   Text(
 //                     'Welcome to Skinova',
 //                     textAlign: TextAlign.center,
@@ -144,9 +166,7 @@
 //                       ],
 //                     ),
 //                   ),
-
 //                   const SizedBox(height: 12),
-
 //                   Text(
 //                     'Your ultimate companion for your skincare journey. Achieve healthier skin with personalized routines and progress tracking.',
 //                     textAlign: TextAlign.center,
@@ -157,22 +177,12 @@
 //                       height: 1.55,
 //                     ),
 //                   ),
-
 //                   const SizedBox(height: 30),
-
-//                   /// زر البداية
 //                   SizedBox(
 //                     width: double.infinity,
 //                     height: 58,
 //                     child: ElevatedButton(
-//                       onPressed: () {
-//                         Navigator.pushReplacement(
-//                           context,
-//                           MaterialPageRoute(
-//                             builder: (_) => const AuthScreen(),
-//                           ),
-//                         );
-//                       },
+//                       onPressed: _openAuthPopup,
 //                       style: ElevatedButton.styleFrom(
 //                         backgroundColor: softLight,
 //                         foregroundColor: beetroot,
@@ -190,43 +200,6 @@
 //                       ),
 //                     ),
 //                   ),
-
-//                   const SizedBox(height: 18),
-
-//                   /// login
-//                   Row(
-//                     mainAxisAlignment: MainAxisAlignment.center,
-//                     children: [
-//                       Text(
-//                         'Already have an account? ',
-//                         style: GoogleFonts.poppins(
-//                           fontSize: 14.5,
-//                           color: barelyMauve.withOpacity(0.88),
-//                           fontWeight: FontWeight.w400,
-//                         ),
-//                       ),
-//                       GestureDetector(
-//                         onTap: () {
-//                           showModalBottomSheet(
-//                             context: context,
-//                             isScrollControlled: true,
-//                             backgroundColor: Colors.transparent,
-//                             barrierColor: Colors.black.withOpacity(0.22),
-//                             builder: (_) => const AuthSheet(),
-//                           );
-//                         },
-//                         child: Text(
-//                           'Login',
-//                           style: GoogleFonts.marcellus(
-//                             fontSize: 14.5,
-//                             color: softLight,
-//                             fontWeight: FontWeight.w600,
-//                           ),
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-
 //                   const SizedBox(height: 14),
 //                 ],
 //               ),
@@ -237,6 +210,7 @@
 //     );
 //   }
 // }
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
@@ -250,10 +224,8 @@ class WelcomeScreen extends StatefulWidget {
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
-  static const Color beetroot = Color(0xFF663F44);
-  static const Color barelyMauve = Color(0xFFCCBDB9);
-  static const Color softLight = Color(0xFFF6F1F0);
-  static const Color softRose = Color(0xFFB08A90);
+  static const Color whiteSmoke = Color(0xFFF7F4F3);
+  static const Color wine = Color(0xFF5B2333);
 
   late VideoPlayerController _videoController;
   bool _isReady = false;
@@ -321,7 +293,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: softLight,
+      backgroundColor: whiteSmoke,
       body: Stack(
         children: [
           Positioned.fill(
@@ -335,7 +307,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     ),
                   )
                 : Container(
-                    color: softLight,
+                    color: whiteSmoke,
                     child: const Center(
                       child: CircularProgressIndicator(),
                     ),
@@ -343,7 +315,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           ),
           Positioned.fill(
             child: Container(
-              color: beetroot.withOpacity(0.10),
+              color: wine.withOpacity(0.10),
             ),
           ),
           Positioned.fill(
@@ -353,8 +325,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    beetroot.withOpacity(0.30),
-                    beetroot.withOpacity(0.10),
+                    wine.withOpacity(0.30),
+                    wine.withOpacity(0.10),
                     Colors.transparent,
                     Colors.transparent,
                   ],
@@ -373,8 +345,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     Colors.transparent,
                     Colors.transparent,
                     Colors.black.withOpacity(0.12),
-                    beetroot.withOpacity(0.72),
-                    beetroot.withOpacity(0.94),
+                    wine.withOpacity(0.72),
+                    wine.withOpacity(0.94),
                   ],
                   stops: const [0.0, 0.42, 0.62, 0.82, 1.0],
                 ),
@@ -393,7 +365,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     style: GoogleFonts.marcellus(
                       fontSize: 32,
                       fontWeight: FontWeight.w700,
-                      color: softLight,
+                      color: whiteSmoke,
                       height: 1.15,
                       letterSpacing: -0.4,
                       shadows: [
@@ -412,7 +384,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w400,
-                      color: barelyMauve.withOpacity(0.95),
+                      color: whiteSmoke.withOpacity(0.95),
                       height: 1.55,
                     ),
                   ),
@@ -423,8 +395,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     child: ElevatedButton(
                       onPressed: _openAuthPopup,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: softLight,
-                        foregroundColor: beetroot,
+                        backgroundColor: whiteSmoke,
+                        foregroundColor: wine,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(999),

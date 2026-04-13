@@ -11,79 +11,103 @@ class AddProductPage extends StatefulWidget {
 }
 
 class _AddProductPageState extends State<AddProductPage> {
-  static const Color bgColor = Color(0xFFF7F7F7);
-  static const Color cardColor = Color(0xFFFFFCFC);
-  static const Color softRose = Color(0xFFCCBDB9);
-  static const Color deepRose = Color(0xFF663F44);
-  static const Color darkRose = Color(0xFF663F44);
-  static const Color textDark = Color(0xFF111111);
-  static const Color lineColor = Color(0xFFCCBDB9);
+  static const Color whiteSmoke = Color(0xFFF7F4F3);
+  static const Color wine = Color(0xFF5B2333);
+
+  static const Color cardColor = Colors.white;
+  static const Color softBorder = Color(0xFFE6D9D6);
+  static const Color softFill = Color(0xFFFCF8F7);
+  static const Color textDark = Color(0xFF2B1C1F);
 
   final _formKey = GlobalKey<FormState>();
 
   final nameController = TextEditingController();
   final brandController = TextEditingController();
-  final categoryController = TextEditingController();
-  final productTypeController = TextEditingController();
-  final imageUrlController = TextEditingController();
   final shortDescriptionController = TextEditingController();
-  final safetyRatingController = TextEditingController();
+  final imageUrlController = TextEditingController();
+  final brandOriginController = TextEditingController();
 
   final priceController = TextEditingController();
   final currencyController = TextEditingController(text: "USD");
   final stockCountController = TextEditingController();
   final sizeController = TextEditingController();
   final discountPercentController = TextEditingController(text: "0");
-  final ratingController = TextEditingController(text: "0");
-  final reviewCountController = TextEditingController(text: "0");
 
-  final benefitsController = TextEditingController();
-  final concernTitleController = TextEditingController();
-  final concernIngredientsController = TextEditingController();
   final ingredientNameController = TextEditingController();
   final ingredientDescriptionController = TextEditingController();
+
+  final goalController = TextEditingController();
 
   bool inStock = true;
 
   bool alcoholFree = false;
+  bool euAllergenFree = false;
   bool fragranceFree = false;
+  bool oilFree = false;
   bool parabenFree = false;
-  bool sulfateFree = false;
-  bool vegan = false;
-  bool crueltyFree = false;
   bool siliconeFree = false;
-
-  String selectedIngredientStatus = 'good';
-
-  final List<String> benefits = [];
-  final List<Map<String, dynamic>> ingredientConcerns = [];
-  final List<Map<String, dynamic>> ingredients = [];
+  bool sulfateFree = false;
+  bool crueltyFree = false;
+  bool fungalAcneSafe = false;
+  bool reefSafe = false;
+  bool vegan = false;
 
   bool isLoading = false;
+
+  final List<Map<String, dynamic>> ingredients = [];
+  final List<String> selectedSkinTypes = [];
+  final List<String> selectedConcerns = [];
+  final List<String> selectedGoals = [];
+
+  final List<String> skinTypeOptions = [
+    "Dry",
+    "Oily",
+    "Combination",
+    "Normal",
+    "Sensitive",
+  ];
+
+  final List<String> concernOptions = [
+    "Acne & Blemishes",
+    "Blackheads",
+    "Dark Spots",
+    "Dryness",
+    "Oiliness",
+    "Redness",
+    "Dullness",
+    "Uneven Texture",
+    "Visible Pores",
+    "Dark Circles",
+    "Fine Lines & Wrinkles",
+    "Sensitive Skin",
+  ];
+
+  final List<String> goalOptions = [
+    "Scan and analyze my skin",
+    "Fix my skin concerns",
+    "Get personalized product recommendations",
+    "Build a skincare routine",
+    "Track my skin progress",
+    "Learn about skincare ingredients",
+  ];
 
   @override
   void dispose() {
     nameController.dispose();
     brandController.dispose();
-    categoryController.dispose();
-    productTypeController.dispose();
-    imageUrlController.dispose();
     shortDescriptionController.dispose();
-    safetyRatingController.dispose();
+    imageUrlController.dispose();
+    brandOriginController.dispose();
 
     priceController.dispose();
     currencyController.dispose();
     stockCountController.dispose();
     sizeController.dispose();
     discountPercentController.dispose();
-    ratingController.dispose();
-    reviewCountController.dispose();
 
-    benefitsController.dispose();
-    concernTitleController.dispose();
-    concernIngredientsController.dispose();
     ingredientNameController.dispose();
     ingredientDescriptionController.dispose();
+    goalController.dispose();
     super.dispose();
   }
 
@@ -93,68 +117,62 @@ class _AddProductPageState extends State<AddProductPage> {
     final price = double.tryParse(priceController.text.trim());
     final stockCount = int.tryParse(stockCountController.text.trim());
     final discountPercent = int.tryParse(discountPercentController.text.trim());
-    final rating = double.tryParse(ratingController.text.trim());
-    final reviewCount = int.tryParse(reviewCountController.text.trim());
 
-    if (price == null ||
-        stockCount == null ||
-        discountPercent == null ||
-        rating == null ||
-        reviewCount == null) {
+    if (price == null || stockCount == null || discountPercent == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please enter valid numeric values")),
       );
       return;
     }
 
-    if (price < 0 ||
-        stockCount < 0 ||
-        discountPercent < 0 ||
-        rating < 0 ||
-        reviewCount < 0) {
+    if (price < 0 || stockCount < 0 || discountPercent < 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Values cannot be negative")),
       );
       return;
     }
 
-    setState(() {
-      isLoading = true;
-    });
+    setState(() => isLoading = true);
 
     final body = {
-      "name": nameController.text.trim(),
       "brand": brandController.text.trim(),
-      "category": categoryController.text.trim(),
-      "productType": productTypeController.text.trim(),
-      "imageUrl": imageUrlController.text.trim(),
+      "name": nameController.text.trim(),
       "shortDescription": shortDescriptionController.text.trim(),
-      "safetyRating": safetyRatingController.text.trim(),
-      "benefits": benefits,
-      "composition": {
+      "imageUrl": imageUrlController.text.trim(),
+      "rating": 0,
+      "reviews": [],
+      "whatsInside": {
         "alcoholFree": alcoholFree,
+        "euAllergenFree": euAllergenFree,
         "fragranceFree": fragranceFree,
+        "oilFree": oilFree,
         "parabenFree": parabenFree,
-        "sulfateFree": sulfateFree,
-        "vegan": vegan,
-        "crueltyFree": crueltyFree,
         "siliconeFree": siliconeFree,
+        "sulfateFree": sulfateFree,
+        "crueltyFree": crueltyFree,
+        "fungalAcneSafe": fungalAcneSafe,
+        "reefSafe": reefSafe,
+        "vegan": vegan,
       },
-      "ingredientConcerns": ingredientConcerns,
       "ingredients": ingredients,
+      "brandOrigin": brandOriginController.text.trim(),
       "price": price,
       "currency": currencyController.text.trim(),
       "inStock": inStock,
       "stockCount": stockCount,
       "size": sizeController.text.trim(),
       "discountPercent": discountPercent,
-      "rating": rating,
-      "reviewCount": reviewCount,
+      "recommendedFor": {
+        "skinTypes": selectedSkinTypes,
+        "concerns": selectedConcerns,
+        "goals": selectedGoals,
+      },
+      "isPublished": true,
     };
 
     try {
       final response = await http.post(
-        Uri.parse("http://192.168.1.4:5000/api/products"),
+        Uri.parse("http://192.168.1.7:5000/api/products"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode(body),
       );
@@ -172,48 +190,15 @@ class _AddProductPageState extends State<AddProductPage> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e")),
       );
     }
 
     if (mounted) {
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
     }
-  }
-
-  void addBenefit() {
-    final text = benefitsController.text.trim();
-    if (text.isEmpty) return;
-
-    setState(() {
-      benefits.add(text);
-      benefitsController.clear();
-    });
-  }
-
-  void addConcern() {
-    final title = concernTitleController.text.trim();
-    final ingredientsText = concernIngredientsController.text.trim();
-
-    if (title.isEmpty || ingredientsText.isEmpty) return;
-
-    final parsedIngredients = ingredientsText
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
-
-    setState(() {
-      ingredientConcerns.add({
-        "title": title,
-        "ingredients": parsedIngredients,
-      });
-      concernTitleController.clear();
-      concernIngredientsController.clear();
-    });
   }
 
   void addIngredient() {
@@ -225,31 +210,29 @@ class _AddProductPageState extends State<AddProductPage> {
     setState(() {
       ingredients.add({
         "name": name,
-        "status": selectedIngredientStatus,
         "description": description,
       });
       ingredientNameController.clear();
       ingredientDescriptionController.clear();
-      selectedIngredientStatus = 'good';
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: whiteSmoke,
       appBar: AppBar(
-        backgroundColor: bgColor,
+        backgroundColor: whiteSmoke,
         elevation: 0,
         centerTitle: true,
         title: Text(
-          'Add Product',
+          "Add Product",
           style: GoogleFonts.marcellus(
-            color: darkRose,
+            color: wine,
             fontSize: 26,
           ),
         ),
-        iconTheme: const IconThemeData(color: darkRose),
+        iconTheme: const IconThemeData(color: wine),
       ),
       body: Form(
         key: _formKey,
@@ -262,11 +245,9 @@ class _AddProductPageState extends State<AddProductPage> {
                 children: [
                   _textField(nameController, "Product Name"),
                   _textField(brandController, "Brand"),
-                  _textField(categoryController, "Category"),
-                  _textField(productTypeController, "Product Type"),
-                  _textField(imageUrlController, "Image URL"),
                   _textField(shortDescriptionController, "Short Description"),
-                  _textField(safetyRatingController, "Safety Rating"),
+                  _textField(imageUrlController, "Image URL"),
+                  _textField(brandOriginController, "Brand Origin"),
                 ],
               ),
             ),
@@ -293,17 +274,6 @@ class _AddProductPageState extends State<AddProductPage> {
                     "Discount Percent",
                     keyboardType: TextInputType.number,
                   ),
-                  _textField(
-                    ratingController,
-                    "Rating",
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                  ),
-                  _textField(
-                    reviewCountController,
-                    "Review Count",
-                    keyboardType: TextInputType.number,
-                  ),
                   _switchTile(
                     "In Stock",
                     inStock,
@@ -313,44 +283,7 @@ class _AddProductPageState extends State<AddProductPage> {
               ),
             ),
             const SizedBox(height: 20),
-            _sectionTitle("Benefits"),
-            _card(
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _plainField(
-                          benefitsController,
-                          "Add Benefit",
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      _smallButton("Add", addBenefit),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: benefits
-                        .map(
-                          (b) => _chip(
-                            b,
-                            onDelete: () {
-                              setState(() {
-                                benefits.remove(b);
-                              });
-                            },
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            _sectionTitle("Composition"),
+            _sectionTitle("What's Inside"),
             _card(
               child: Column(
                 children: [
@@ -360,9 +293,19 @@ class _AddProductPageState extends State<AddProductPage> {
                     (v) => setState(() => alcoholFree = v),
                   ),
                   _switchTile(
+                    "EU Allergen Free",
+                    euAllergenFree,
+                    (v) => setState(() => euAllergenFree = v),
+                  ),
+                  _switchTile(
                     "Fragrance Free",
                     fragranceFree,
                     (v) => setState(() => fragranceFree = v),
+                  ),
+                  _switchTile(
+                    "Oil Free",
+                    oilFree,
+                    (v) => setState(() => oilFree = v),
                   ),
                   _switchTile(
                     "Paraben Free",
@@ -370,14 +313,14 @@ class _AddProductPageState extends State<AddProductPage> {
                     (v) => setState(() => parabenFree = v),
                   ),
                   _switchTile(
+                    "Silicone Free",
+                    siliconeFree,
+                    (v) => setState(() => siliconeFree = v),
+                  ),
+                  _switchTile(
                     "Sulfate Free",
                     sulfateFree,
                     (v) => setState(() => sulfateFree = v),
-                  ),
-                  _switchTile(
-                    "Vegan",
-                    vegan,
-                    (v) => setState(() => vegan = v),
                   ),
                   _switchTile(
                     "Cruelty Free",
@@ -385,49 +328,90 @@ class _AddProductPageState extends State<AddProductPage> {
                     (v) => setState(() => crueltyFree = v),
                   ),
                   _switchTile(
-                    "Silicone Free",
-                    siliconeFree,
-                    (v) => setState(() => siliconeFree = v),
+                    "Fungal Acne Safe",
+                    fungalAcneSafe,
+                    (v) => setState(() => fungalAcneSafe = v),
+                  ),
+                  _switchTile(
+                    "Reef Safe",
+                    reefSafe,
+                    (v) => setState(() => reefSafe = v),
+                  ),
+                  _switchTile(
+                    "Vegan",
+                    vegan,
+                    (v) => setState(() => vegan = v),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 20),
-            _sectionTitle("Ingredient Concerns"),
+            _sectionTitle("Recommended For"),
             _card(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _plainField(concernTitleController, "Concern Title"),
-                  const SizedBox(height: 12),
-                  _plainField(
-                    concernIngredientsController,
-                    "Concern Ingredients (comma separated)",
-                  ),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: _smallButton("Add Concern", addConcern),
-                  ),
-                  const SizedBox(height: 12),
-                  ...ingredientConcerns.map(
-                    (c) => ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        c["title"],
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      subtitle: Text((c["ingredients"] as List).join(", ")),
-                      trailing: IconButton(
-                        onPressed: () {
+                  _label("Skin Types"),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: skinTypeOptions.map((type) {
+                      final isSelected = selectedSkinTypes.contains(type);
+                      return _choiceChip(
+                        label: type,
+                        selected: isSelected,
+                        onSelected: (_) {
                           setState(() {
-                            ingredientConcerns.remove(c);
+                            isSelected
+                                ? selectedSkinTypes.remove(type)
+                                : selectedSkinTypes.add(type);
                           });
                         },
-                        icon: const Icon(Icons.delete_outline),
-                      ),
-                    ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 18),
+                  _label("Concerns"),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: concernOptions.map((concern) {
+                      final isSelected = selectedConcerns.contains(concern);
+                      return _choiceChip(
+                        label: concern,
+                        selected: isSelected,
+                        onSelected: (_) {
+                          setState(() {
+                            isSelected
+                                ? selectedConcerns.remove(concern)
+                                : selectedConcerns.add(concern);
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 18),
+                  _label("Goals"),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: goalOptions.map((goal) {
+                      final isSelected = selectedGoals.contains(goal);
+                      return _choiceChip(
+                        label: goal,
+                        selected: isSelected,
+                        onSelected: (_) {
+                          setState(() {
+                            isSelected
+                                ? selectedGoals.remove(goal)
+                                : selectedGoals.add(goal);
+                          });
+                        },
+                      );
+                    }).toList(),
                   ),
                 ],
               ),
@@ -438,24 +422,6 @@ class _AddProductPageState extends State<AddProductPage> {
               child: Column(
                 children: [
                   _plainField(ingredientNameController, "Ingredient Name"),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: selectedIngredientStatus,
-                    decoration: _inputDecoration("Ingredient Status"),
-                    items: const [
-                      DropdownMenuItem(value: 'good', child: Text('good')),
-                      DropdownMenuItem(
-                          value: 'warning', child: Text('warning')),
-                      DropdownMenuItem(
-                          value: 'neutral', child: Text('neutral')),
-                      DropdownMenuItem(value: 'bad', child: Text('bad')),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        selectedIngredientStatus = value!;
-                      });
-                    },
-                  ),
                   const SizedBox(height: 12),
                   _plainField(
                     ingredientDescriptionController,
@@ -468,22 +434,26 @@ class _AddProductPageState extends State<AddProductPage> {
                   ),
                   const SizedBox(height: 12),
                   ...ingredients.map(
-                    (i) => ListTile(
+                    (ingredient) => ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
-                        i["name"],
+                        ingredient["name"],
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w700,
+                          color: wine,
                         ),
                       ),
-                      subtitle: Text("${i["status"]} • ${i["description"]}"),
+                      subtitle: Text(
+                        ingredient["description"],
+                        style: GoogleFonts.poppins(color: textDark),
+                      ),
                       trailing: IconButton(
                         onPressed: () {
                           setState(() {
-                            ingredients.remove(i);
+                            ingredients.remove(ingredient);
                           });
                         },
-                        icon: const Icon(Icons.delete_outline),
+                        icon: const Icon(Icons.delete_outline, color: wine),
                       ),
                     ),
                   ),
@@ -497,7 +467,7 @@ class _AddProductPageState extends State<AddProductPage> {
               child: ElevatedButton(
                 onPressed: isLoading ? null : saveProduct,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: deepRose,
+                  backgroundColor: wine,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
                   ),
@@ -528,8 +498,19 @@ class _AddProductPageState extends State<AddProductPage> {
         style: GoogleFonts.poppins(
           fontSize: 18,
           fontWeight: FontWeight.w700,
-          color: darkRose,
+          color: wine,
         ),
+      ),
+    );
+  }
+
+  Widget _label(String text) {
+    return Text(
+      text,
+      style: GoogleFonts.poppins(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: textDark,
       ),
     );
   }
@@ -540,10 +521,10 @@ class _AddProductPageState extends State<AddProductPage> {
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: lineColor, width: 1),
+        border: Border.all(color: softBorder),
         boxShadow: [
           BoxShadow(
-            color: darkRose.withOpacity(0.03),
+            color: wine.withOpacity(0.05),
             blurRadius: 14,
             offset: const Offset(0, 5),
           ),
@@ -585,20 +566,20 @@ class _AddProductPageState extends State<AddProductPage> {
     return InputDecoration(
       labelText: label,
       labelStyle: GoogleFonts.poppins(
-        color: softRose,
+        color: wine.withOpacity(0.7),
         fontSize: 14,
         fontWeight: FontWeight.w500,
       ),
       filled: true,
-      fillColor: const Color(0xFFF9F4F3),
+      fillColor: softFill,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: lineColor),
+        borderSide: const BorderSide(color: softBorder),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: deepRose, width: 1.2),
+        borderSide: const BorderSide(color: wine, width: 1.2),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
@@ -617,7 +598,7 @@ class _AddProductPageState extends State<AddProductPage> {
       child: ElevatedButton(
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
-          backgroundColor: deepRose,
+          backgroundColor: wine,
           padding: const EdgeInsets.symmetric(horizontal: 18),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -634,39 +615,6 @@ class _AddProductPageState extends State<AddProductPage> {
     );
   }
 
-  Widget _chip(String text, {required VoidCallback onDelete}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF4EEEE),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: lineColor),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            text,
-            style: GoogleFonts.poppins(
-              color: textDark,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(width: 6),
-          GestureDetector(
-            onTap: onDelete,
-            child: const Icon(
-              Icons.close,
-              size: 16,
-              color: darkRose,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _switchTile(
     String title,
     bool value,
@@ -676,7 +624,7 @@ class _AddProductPageState extends State<AddProductPage> {
       value: value,
       onChanged: onChanged,
       contentPadding: EdgeInsets.zero,
-      activeColor: deepRose,
+      activeColor: wine,
       title: Text(
         title,
         style: GoogleFonts.poppins(
@@ -684,6 +632,30 @@ class _AddProductPageState extends State<AddProductPage> {
           fontWeight: FontWeight.w500,
           color: textDark,
         ),
+      ),
+    );
+  }
+
+  Widget _choiceChip({
+    required String label,
+    required bool selected,
+    required ValueChanged<bool> onSelected,
+  }) {
+    return ChoiceChip(
+      label: Text(
+        label,
+        style: GoogleFonts.poppins(
+          color: selected ? Colors.white : wine,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      selected: selected,
+      onSelected: onSelected,
+      selectedColor: wine,
+      backgroundColor: whiteSmoke,
+      side: const BorderSide(color: softBorder),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
       ),
     );
   }

@@ -19,24 +19,23 @@ class _SkinConcernsScreenState extends State<SkinConcernsScreen> {
 
   final int currentStep = 4;
   final int totalSteps = 10;
-
   final List<String> concerns = [
     "Acne & Blemishes",
-    "Anti-Aging",
     "Blackheads",
-    "Dark Circles",
     "Dark Spots",
     "Dryness",
-    "Dullness",
-    "Fine Lines & Wrinkles",
-    "Loss of Firmness",
     "Oiliness",
-    "Puffiness",
     "Redness",
+    "Dullness",
     "Uneven Texture",
     "Visible Pores",
+    "Dark Circles",
+    "Puffiness",
+    "Fine Lines & Wrinkles",
+    "Loss of Firmness",
+    "Sensitive Skin",
+    "Dehydration",
   ];
-
   final Set<String> selectedConcerns = {};
   Future<void> saveConcernsAndContinue() async {
     if (selectedConcerns.isEmpty) return;

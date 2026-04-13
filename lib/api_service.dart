@@ -1,9 +1,58 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'product_model.dart';
+import 'user_model.dart';
+import 'dart:io';
+import '../admin_story_user_model.dart';
 
 class ApiService {
-  static const String baseUrl = "http://192.168.1.4:5000";
+  static const String baseUrl = "http://192.168.1.7:5000";
+  static Future<String?> uploadProfileImage({
+    required String userId,
+    required File imageFile,
+  }) async {
+    try {
+      var request = http.MultipartRequest(
+        'PUT',
+        Uri.parse("$baseUrl/api/auth/upload-profile-image/$userId"),
+      );
+
+      request.files.add(
+        await http.MultipartFile.fromPath("image", imageFile.path),
+      );
+
+      var response = await request.send();
+      var responseBody = await response.stream.bytesToString();
+
+      final decoded = jsonDecode(responseBody);
+
+      if (response.statusCode == 200) {
+        return decoded["profileImage"];
+      } else {
+        print("Upload failed: $responseBody");
+        return null;
+      }
+    } catch (e) {
+      print("Upload error: $e");
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateUserProfile({
+    required String userId,
+    required Map<String, dynamic> data,
+  }) async {
+    final response = await http.put(
+      Uri.parse("$baseUrl/api/auth/update-profile/$userId"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(data),
+    );
+
+    return {
+      "statusCode": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
+  }
 
   static Future<Map<String, dynamic>> registerUser({
     required String fullName,
@@ -24,6 +73,25 @@ class ApiService {
       "statusCode": response.statusCode,
       "data": jsonDecode(response.body),
     };
+  }
+
+  static Future<bool> removeProfileImage({
+    required String userId,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse("$baseUrl/api/auth/remove-profile-image/$userId"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      print("REMOVE STATUS: ${response.statusCode}");
+      print("REMOVE BODY: ${response.body}");
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print("REMOVE IMAGE ERROR: $e");
+      return false;
+    }
   }
 
   static Future<Map<String, dynamic>> loginUser({
@@ -226,5 +294,180 @@ class ApiService {
       "statusCode": response.statusCode,
       "data": jsonDecode(response.body),
     };
+  }
+
+  static Future<ProductModel> fetchProductById(String productId) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/products/$productId"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return ProductModel.fromJson(data);
+    } else {
+      throw Exception(
+        'Failed to load product: ${response.statusCode} ${response.body}',
+      );
+    }
+  }
+
+  static Future<Map<String, dynamic>> addProduct({
+    required Map<String, dynamic> productData,
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/products"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(productData),
+    );
+
+    return {
+      "statusCode": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
+  }
+
+  static Future<Map<String, dynamic>> addReview({
+    required String productId,
+    required String userId,
+    required String userName,
+    required double rating,
+    required String comment,
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/products/$productId/reviews"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "userId": userId,
+        "userName": userName,
+        "rating": rating,
+        "comment": comment,
+      }),
+    );
+
+    return {
+      "statusCode": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
+  }
+
+  static Future<UserModel?> fetchUserProfile(String userId) async {
+    try {
+      final url = Uri.parse("$baseUrl/api/auth/user/$userId");
+      print("REQUEST URL: $url");
+
+      final response = await http.get(
+        url,
+        headers: {"Content-Type": "application/json"},
+      );
+
+      print("STATUS CODE: ${response.statusCode}");
+      print("RESPONSE BODY: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return UserModel.fromJson(data);
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print("FETCH PROFILE ERROR: $e");
+      return null;
+    }
+  }
+
+  static Future<List<UserCollectionModel>?> addCollection({
+    required String userId,
+    required String title,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/user/$userId/collections'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'title': title,
+          'images': [],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        return (data['collections'] as List<dynamic>)
+            .map((e) => UserCollectionModel.fromJson(e))
+            .toList();
+      } else {
+        print('Add collection failed: ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('Add collection error: $e');
+      return null;
+    }
+  }
+
+  static Future<bool> updateCollectionName({
+    required String collectionId,
+    required String newTitle,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/auth/collection/$collectionId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'title': newTitle,
+        }),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<bool> deleteCollection({
+    required String collectionId,
+  }) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/auth/collection/$collectionId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      print('deleteCollection STATUS = ${response.statusCode}');
+      print('deleteCollection BODY = ${response.body}');
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('deleteCollection ERROR = $e');
+      return false;
+    }
+  }
+
+  static Future<List<AdminStoryUserModel>> getAllUsersForAdmin() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/auth/users'),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as List;
+      return data.map((e) => AdminStoryUserModel.fromJson(e)).toList();
+    } else {
+      throw Exception('Failed to load users');
+    }
+  }
+
+  static Future<int> getProductsCount() async {
+    final response = await http.get(Uri.parse('$baseUrl/api/products/count'));
+
+    print("PRODUCTS COUNT STATUS: ${response.statusCode}");
+    print("PRODUCTS COUNT BODY: ${response.body}");
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['count'] ?? 0;
+    } else {
+      throw Exception('Failed to load products count');
+    }
   }
 }

@@ -9,55 +9,54 @@ class SkincareFinderPage extends StatefulWidget {
 }
 
 class _SkincareFinderPageState extends State<SkincareFinderPage> {
-  static const Color bgColor = Color(0xFFF7F7F7);
-  static const Color cardColor = Color(0xFFFFFFFF);
-  static const Color softRose = Color(0xFFCCBDB9);
-  static const Color deepRose = Color(0xFF663F44);
-  static const Color darkRose = Color(0xFF663F44);
-  static const Color textDark = Color(0xFF111111);
-  static const Color lineColor = Color(0xFFCCBDB9);
-  static const Color buttonColor = Color(0xFFCCBDB9);
+  static const Color whiteSmoke = Color(0xFFF7F4F3);
+  static const Color wine = Color(0xFF5B2333);
+  static const Color pageBg = Colors.white;
+  static const Color cardColor = Colors.white;
+  static const Color softBorder = Color(0xFFF7F4F3);
+  static const Color chipBg = Color(0xFFF7F4F3);
+  static const Color textDark = Color(0xFF2A2A2A);
+  static const Color mutedText = Color(0xFF5B2333);
 
-  final List<String> productTypes = [
-    'Face cream',
-    'Face mask',
-    'Face scrub',
-    'Face mist',
+  final List<String> routineSteps = [
     'Cleanser',
-    'Sheet mask',
-    'Face toner',
-    'Face serum',
-    'Eye cream',
+    'Oil Cleanser',
+    'Toner',
+    'Serum',
+    'Moisturizer',
     'Sunscreen',
-    'Face oil',
-    'Aftershave',
-    'Shave cream',
-    'Repair cream',
+    'Eye Cream',
   ];
 
-  final List<String> skinSuitability = [
+  final List<String> skinTypes = [
     'Dry',
     'Normal',
     'Combination',
     'Oily',
+    'Sensitive',
   ];
 
-  final List<String> productEffects = [
-    'Moisturizing',
-    'Calming',
-    'Anti-acne',
-    'Tone evening',
-    'Anti-aging',
-    'Brightening',
-    'Hydrating',
-    'Pore minimizing',
-    'Soothing',
-    'Exfoliating',
+  final List<String> concerns = [
+    "Acne & Blemishes",
+    "Blackheads",
+    "Dark Spots",
+    "Dryness",
+    "Oiliness",
+    "Redness",
+    "Dullness",
+    "Uneven Texture",
+    "Visible Pores",
+    "Dark Circles",
+    "Puffiness",
+    "Fine Lines & Wrinkles",
+    "Loss of Firmness",
+    "Sensitive Skin",
+    "Dehydration",
   ];
 
-  final Set<String> selectedTypes = {};
+  final Set<String> selectedSteps = {};
   final Set<String> selectedSkinTypes = {};
-  final Set<String> selectedEffects = {};
+  final Set<String> selectedConcerns = {};
 
   void _toggleSelection(Set<String> selectedSet, String value) {
     setState(() {
@@ -71,68 +70,74 @@ class _SkincareFinderPageState extends State<SkincareFinderPage> {
 
   void _resetFilters() {
     setState(() {
-      selectedTypes.clear();
+      selectedSteps.clear();
       selectedSkinTypes.clear();
-      selectedEffects.clear();
+      selectedConcerns.clear();
     });
   }
 
   int get totalSelections =>
-      selectedTypes.length + selectedSkinTypes.length + selectedEffects.length;
+      selectedSteps.length + selectedSkinTypes.length + selectedConcerns.length;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: pageBg,
       body: SafeArea(
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
               child: Row(
                 children: [
-                  GestureDetector(
+                  _iconButton(
+                    icon: Icons.arrow_back_ios_new_rounded,
                     onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: cardColor,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: cardColor,
-                          width: 1,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 18,
-                        color: darkRose,
-                      ),
-                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      'Skincare Finder',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.marcellus(
-                        fontSize: 27,
-                        color: darkRose,
-                        height: 1,
-                      ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Skincare Finder',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.marcellus(
+                            fontSize: 29,
+                            color: wine,
+                            height: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Find products that match your skin needs',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12.5,
+                            color: mutedText,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   GestureDetector(
                     onTap: _resetFilters,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: whiteSmoke,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: softBorder),
+                      ),
                       child: Text(
                         'Reset',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: softRose,
+                          color: wine,
                         ),
                       ),
                     ),
@@ -143,31 +148,36 @@ class _SkincareFinderPageState extends State<SkincareFinderPage> {
             const SizedBox(height: 8),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 6, 20, 140),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 140),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    _heroCard(),
+                    const SizedBox(height: 18),
                     _sectionContainer(
-                      title: 'Product Type',
+                      title: 'Routine Step',
+                      subtitle: 'Choose the type of product you want',
                       child: _chipWrap(
-                        items: productTypes,
-                        selectedItems: selectedTypes,
+                        items: routineSteps,
+                        selectedItems: selectedSteps,
                       ),
                     ),
                     const SizedBox(height: 18),
                     _sectionContainer(
-                      title: 'Skin Suitability',
+                      title: 'Skin Type',
+                      subtitle: 'Pick the skin type you want products for',
                       child: _chipWrap(
-                        items: skinSuitability,
+                        items: skinTypes,
                         selectedItems: selectedSkinTypes,
                       ),
                     ),
                     const SizedBox(height: 18),
                     _sectionContainer(
-                      title: 'Product Effects',
+                      title: 'Skin Concern',
+                      subtitle: 'Select the concerns you want to target',
                       child: _chipWrap(
-                        items: productEffects,
-                        selectedItems: selectedEffects,
+                        items: concerns,
+                        selectedItems: selectedConcerns,
                       ),
                     ),
                   ],
@@ -178,26 +188,26 @@ class _SkincareFinderPageState extends State<SkincareFinderPage> {
         ),
       ),
       bottomNavigationBar: Container(
-        color: bgColor,
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        color: pageBg,
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
         child: SafeArea(
           top: false,
           child: SizedBox(
-            height: 68,
+            height: 62,
             child: ElevatedButton(
               onPressed: () {
                 Navigator.pop(context, {
-                  'types': selectedTypes.toList(),
+                  'steps': selectedSteps.toList(),
                   'skinTypes': selectedSkinTypes.toList(),
-                  'effects': selectedEffects.toList(),
+                  'concerns': selectedConcerns.toList(),
                 });
               },
               style: ElevatedButton.styleFrom(
                 elevation: 0,
-                backgroundColor: totalSelections == 0 ? buttonColor : deepRose,
-                foregroundColor: Colors.white,
+                backgroundColor: totalSelections == 0 ? whiteSmoke : wine,
+                foregroundColor: totalSelections == 0 ? wine : Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: BorderRadius.circular(22),
                 ),
               ),
               child: Text(
@@ -205,9 +215,8 @@ class _SkincareFinderPageState extends State<SkincareFinderPage> {
                     ? 'Show Products'
                     : 'Show Products ($totalSelections)',
                 style: GoogleFonts.poppins(
-                  fontSize: 18,
+                  fontSize: 17,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
                 ),
               ),
             ),
@@ -217,8 +226,86 @@ class _SkincareFinderPageState extends State<SkincareFinderPage> {
     );
   }
 
+  Widget _heroCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+      decoration: BoxDecoration(
+        color: whiteSmoke,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: softBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: wine,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Icon(
+              Icons.search_rounded,
+              color: Colors.white,
+              size: 26,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Build your match',
+                  style: GoogleFonts.marcellus(
+                    fontSize: 21,
+                    color: wine,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Choose a routine step, your skin type, and the concern you want to focus on. We’ll use that to show the most suitable products.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    height: 1.5,
+                    color: textDark,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _iconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: whiteSmoke,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: softBorder),
+        ),
+        child: Icon(
+          icon,
+          size: 18,
+          color: wine,
+        ),
+      ),
+    );
+  }
+
   Widget _sectionContainer({
     required String title,
+    required String subtitle,
     required Widget child,
   }) {
     return Container(
@@ -226,16 +313,16 @@ class _SkincareFinderPageState extends State<SkincareFinderPage> {
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: lineColor,
+          color: softBorder,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: darkRose.withOpacity(0.025),
-            blurRadius: 14,
-            offset: const Offset(0, 5),
+            color: wine.withOpacity(0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -244,10 +331,18 @@ class _SkincareFinderPageState extends State<SkincareFinderPage> {
         children: [
           Text(
             title,
+            style: GoogleFonts.marcellus(
+              fontSize: 23,
+              color: wine,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
             style: GoogleFonts.poppins(
-              fontSize: 21,
-              fontWeight: FontWeight.w500,
-              color: darkRose,
+              fontSize: 12.5,
+              color: mutedText,
+              height: 1.4,
             ),
           ),
           const SizedBox(height: 18),
@@ -271,19 +366,19 @@ class _SkincareFinderPageState extends State<SkincareFinderPage> {
           onTap: () => _toggleSelection(selectedItems, item),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isSelected ? deepRose : bgColor,
+              color: isSelected ? wine : chipBg,
               borderRadius: BorderRadius.circular(999),
               border: Border.all(
-                color: isSelected ? deepRose : lineColor,
+                color: isSelected ? wine : softBorder,
                 width: 1,
               ),
             ),
             child: Text(
               item,
               style: GoogleFonts.poppins(
-                fontSize: 14,
+                fontSize: 13.5,
                 fontWeight: FontWeight.w500,
                 color: isSelected ? Colors.white : textDark,
               ),

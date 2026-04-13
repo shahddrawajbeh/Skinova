@@ -22,33 +22,35 @@ class _SpecialConditionsScreenState extends State<SpecialConditionsScreen> {
   final int totalSteps = 10;
 
   final Set<String> selectedConditions = {};
-
   final List<Map<String, dynamic>> options = [
     {
-      "title": "Pregnancy,\nBreastfeeding",
+      "title": "Pregnancy or breastfeeding",
       "icon": Icons.pregnant_woman_outlined,
     },
     {
-      "title": "Hormonal\nimbalances",
+      "title": "Hormonal changes",
       "icon": Icons.balance_rounded,
     },
     {
-      "title": "Menopause,\nPerimenopause",
+      "title": "Menopause or perimenopause",
       "icon": Icons.self_improvement_outlined,
     },
     {
-      "title": "Autoimmune\ndiseases",
+      "title": "Autoimmune condition",
       "icon": Icons.health_and_safety_outlined,
     },
     {
-      "title": "No, I don't",
+      "title": "Stress or lack of sleep",
+      "icon": Icons.bedtime_outlined,
+    },
+    {
+      "title": "None of these",
       "icon": Icons.check_circle_outline_rounded,
     },
   ];
-
   void toggleCondition(String item) {
     setState(() {
-      if (item == "No, I don't") {
+      if (item == "None of these") {
         if (selectedConditions.contains(item)) {
           selectedConditions.remove(item);
         } else {
@@ -60,7 +62,7 @@ class _SpecialConditionsScreenState extends State<SpecialConditionsScreen> {
         if (selectedConditions.contains(item)) {
           selectedConditions.remove(item);
         } else {
-          selectedConditions.remove("No, I don't");
+          selectedConditions.remove("None of these");
           selectedConditions.add(item);
         }
       }
@@ -86,7 +88,8 @@ class _SpecialConditionsScreenState extends State<SpecialConditionsScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => WelcomeReadyScreen(userId: userId),
+          builder: (_) => WelcomeReadyScreen(
+              userId: userId, userName: prefs.getString("userName") ?? "User"),
         ),
       );
     } else {
