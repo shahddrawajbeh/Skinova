@@ -10,6 +10,8 @@ import '../api_service.dart';
 import '../product_model.dart';
 import 'product_details_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'group_details_screen.dart';
+import '../group_model.dart';
 
 class SkinovaProductsScreen extends StatefulWidget {
   final String userId;
@@ -47,6 +49,26 @@ class _SkinovaProductsScreenState extends State<SkinovaProductsScreen>
   bool isLoadingProducts = true;
   List<ProductModel> allProducts = [];
   List<ProductModel> recommendedProducts = [];
+  List<GroupModel> allGroups = [];
+  bool isLoadingGroups = true;
+  Future<void> loadGroups() async {
+    try {
+      final loadedGroups = await ApiService.fetchGroups();
+
+      if (!mounted) return;
+
+      setState(() {
+        allGroups = loadedGroups;
+        isLoadingGroups = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        isLoadingGroups = false;
+      });
+      debugPrint("Load groups error: $e");
+    }
+  }
 
   final TextEditingController searchController = TextEditingController();
   final List<String> skinTagsList = const [
@@ -178,6 +200,7 @@ class _SkinovaProductsScreenState extends State<SkinovaProductsScreen>
     });
     loadCartCount();
     loadProducts();
+    loadGroups();
   }
 
   Future<void> loadCartCount() async {
@@ -1107,114 +1130,218 @@ class _SkinovaProductsScreenState extends State<SkinovaProductsScreen>
   static const Color mutedText = Color(0xFFB7B7B7);
   static const Color sliderBlue = Color(0xFF3A99F5);
 
+  // Widget _buildCategoryGrid() {
+  //   final List<Map<String, String>> categories = [
+  //     {
+  //       'title': 'After sun care',
+  //       'slug': 'after-sun-care',
+  //       'image': 'assets/categories/suncare.jpg',
+  //     },
+  //     {
+  //       'title': 'Blemish treatments',
+  //       'slug': 'blemish-treatments',
+  //       'image': 'assets/categories/belmish.jpg',
+  //     },
+  //     {
+  //       'title': 'Body lotions',
+  //       'slug': 'body-lotions',
+  //       'image': 'assets/categories/body_lotion.jpg',
+  //     },
+  //     {
+  //       'title': 'Body wash',
+  //       'slug': 'body-wash',
+  //       'image': 'assets/categories/body_wash.jpg',
+  //     },
+  //     {
+  //       'title': 'Cleansers',
+  //       'slug': 'cleansers',
+  //       'image': 'assets/categories/cleanser.jpg',
+  //     },
+  //     {
+  //       'title': 'Complexion',
+  //       'slug': 'complexion',
+  //       'image': 'assets/categories/complexion.jpg',
+  //     },
+  //     {
+  //       'title': 'Exfoliators',
+  //       'slug': 'exfoliators',
+  //       'image': 'assets/categories/exfoliators.jpg',
+  //     },
+  //     {
+  //       'title': 'Eye treatments',
+  //       'slug': 'eye-treatments',
+  //       'image': 'assets/categories/eye_treatment.jpg',
+  //     },
+  //     {
+  //       'title': 'Face masks',
+  //       'slug': 'face-masks',
+  //       'image': 'assets/categories/face_mask.jpg',
+  //     },
+  //     {
+  //       'title': 'Face mists',
+  //       'slug': 'face-mists',
+  //       'image': 'assets/categories/face_mist.webp',
+  //     },
+  //     {
+  //       'title': 'Face oils',
+  //       'slug': 'face-oils',
+  //       'image': 'assets/categories/face_oil.jpg',
+  //     },
+  //     {
+  //       'title': 'Foot treatments',
+  //       'slug': 'foot-treatments',
+  //       'image': 'assets/categories/foot_treatment.jpg',
+  //     },
+  //     {
+  //       'title': 'Fragrances',
+  //       'slug': 'fragrances',
+  //       'image': 'assets/categories/fragrances.webp',
+  //     },
+  //     {
+  //       'title': 'Gels',
+  //       'slug': 'gels',
+  //       'image': 'assets/categories/gels.jpg',
+  //     },
+  //     {
+  //       'title': 'Hair conditioners',
+  //       'slug': 'hair-conditioners',
+  //       'image': 'assets/categories/hair_conditioners.jpg',
+  //     },
+  //     {
+  //       'title': 'Hair shampoos',
+  //       'slug': 'hair-shampoos',
+  //       'image': 'assets/categories/hair_shampoos.jpg',
+  //     },
+  //     {
+  //       'title': 'Hand treatments',
+  //       'slug': 'hand-treatments',
+  //       'image': 'assets/categories/hand_treatments.webp',
+  //     },
+  //     {
+  //       'title': 'Lip treatments',
+  //       'slug': 'lip-treatments',
+  //       'image': 'assets/categories/lip_treatments.jpg',
+  //     },
+  //     {
+  //       'title': 'Moisturizers',
+  //       'slug': 'moisturizers',
+  //       'image': 'assets/categories/mois.jpg',
+  //     },
+  //     {
+  //       'title': 'Scrubs',
+  //       'slug': 'scrubs',
+  //       'image': 'assets/categories/scrubs.webp',
+  //     },
+  //     {
+  //       'title': 'Self tanners',
+  //       'slug': 'self-tanners',
+  //       'image': 'assets/categories/self_tanners.jpg',
+  //     },
+  //     {
+  //       'title': 'Serums',
+  //       'slug': 'serums',
+  //       'image': 'assets/categories/serums.jpg',
+  //     },
+  //     {
+  //       'title': 'Sunscreens',
+  //       'slug': 'sunscreens',
+  //       'image': 'assets/categories/sun_screen.jpg',
+  //     },
+  //     {
+  //       'title': 'Toners',
+  //       'slug': 'toners',
+  //       'image': 'assets/categories/toners.jpg',
+  //     },
+  //     {
+  //       'title': 'Tools',
+  //       'slug': 'tools',
+  //       'image': 'assets/categories/tools.jpg',
+  //     },
+  //   ];
+  //   return GridView.builder(
+  //     shrinkWrap: true,
+  //     physics: const NeverScrollableScrollPhysics(),
+  //     itemCount: categories.length,
+  //     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+  //       crossAxisCount: 2,
+  //       mainAxisSpacing: 14,
+  //       crossAxisSpacing: 14,
+  //       childAspectRatio: 1.75,
+  //     ),
+  //     itemBuilder: (context, index) {
+  //       final item = categories[index];
+
+  //       return GestureDetector(
+  //         onTap: () {
+  //           Navigator.push(
+  //             context,
+  //             MaterialPageRoute(
+  //               builder: (_) => GroupDetailsScreen(
+  //                 groupSlug: item['slug']!,
+  //                 userId: widget.userId,
+  //                 userName: widget.userName,
+  //               ),
+  //             ),
+  //           );
+  //         },
+  //         child: Container(
+  //           decoration: BoxDecoration(
+  //             borderRadius: BorderRadius.circular(20),
+  //             image: DecorationImage(
+  //               image: AssetImage(item['image']!),
+  //               fit: BoxFit.cover,
+  //               opacity: 0.35,
+  //             ),
+  //             color: const Color(0xFFF6F4F2),
+  //           ),
+  //           child: Container(
+  //             decoration: BoxDecoration(
+  //               borderRadius: BorderRadius.circular(20),
+  //               color: Colors.white.withOpacity(0.20),
+  //             ),
+  //             alignment: Alignment.bottomLeft,
+  //             padding: const EdgeInsets.all(16),
+  //             child: Text(
+  //               item['title']!,
+  //               style: GoogleFonts.poppins(
+  //                 fontSize: 14,
+  //                 fontWeight: FontWeight.w500,
+  //                 color: const Color(0xFF202124),
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
   Widget _buildCategoryGrid() {
-    final List<Map<String, String>> categories = [
-      {
-        'title': 'After sun care',
-        'image': 'assets/categories/suncare.jpg',
-      },
-      {
-        'title': 'Blemish treatments',
-        'image': 'assets/categories/belmish.jpg',
-      },
-      {
-        'title': 'Body lotions',
-        'image': 'assets/categories/body_lotion.jpg',
-      },
-      {
-        'title': 'Body wash',
-        'image': 'assets/categories/body_wash.jpg',
-      },
-      {
-        'title': 'Cleansers',
-        'image': 'assets/categories/cleanser.jpg',
-      },
-      {
-        'title': 'Complexion',
-        'image': 'assets/categories/complexion.jpg',
-      },
-      {
-        'title': 'Exfoliators',
-        'image': 'assets/categories/exfoliators.jpg',
-      },
-      {
-        'title': 'Eye treatments',
-        'image': 'assets/categories/eye_treatment.jpg',
-      },
-      {
-        'title': 'Face masks',
-        'image': 'assets/categories/face_mask.jpg',
-      },
-      {
-        'title': 'Face mists',
-        'image': 'assets/categories/face_mist.webp',
-      },
-      {
-        'title': 'Face oils',
-        'image': 'assets/categories/face_oil.jpg',
-      },
-      {
-        'title': 'Foot treatments',
-        'image': 'assets/categories/foot_treatment.jpg',
-      },
-      {
-        'title': 'Fragrances',
-        'image': 'assets/categories/fragrances.webp',
-      },
-      {
-        'title': 'Gels',
-        'image': 'assets/categories/gels.jpg',
-      },
-      {
-        'title': 'Hair conditioners',
-        'image': 'assets/categories/hair_conditioners.jpg',
-      },
-      {
-        'title': 'Hair shampoos',
-        'image': 'assets/categories/hair_shampoos.jpg',
-      },
-      {
-        'title': 'Hand treatments',
-        'image': 'assets/categories/hand_treatments.webp',
-      },
-      {
-        'title': 'Lip treatments',
-        'image': 'assets/categories/lip_treatments.jpg',
-      },
-      {
-        'title': 'Moisturizers',
-        'image': 'assets/categories/mois.jpg',
-      },
-      {
-        'title': 'Scrubs',
-        'image': 'assets/categories/scrubs.webp',
-      },
-      {
-        'title': 'Self tanners',
-        'image': 'assets/categories/self_tanners.jpg',
-      },
-      {
-        'title': 'Serums',
-        'image': 'assets/categories/serums.jpg',
-      },
-      {
-        'title': 'Sunscreens',
-        'image': 'assets/categories/sun_screen.jpg',
-      },
-      {
-        'title': 'Toners',
-        'image': 'assets/categories/toners.jpg',
-      },
-      {
-        'title': 'Tools',
-        'image': 'assets/categories/tools.jpg',
-      },
-    ];
+    if (isLoadingGroups) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (allGroups.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Text(
+          "No groups found",
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: const Color(0xFF202124),
+          ),
+        ),
+      );
+    }
 
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: categories.length,
+      itemCount: allGroups.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         mainAxisSpacing: 14,
@@ -1222,15 +1349,17 @@ class _SkinovaProductsScreenState extends State<SkinovaProductsScreen>
         childAspectRatio: 1.75,
       ),
       itemBuilder: (context, index) {
-        final item = categories[index];
+        final group = allGroups[index];
 
         return GestureDetector(
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => SearchPage(
-                  initialCategory: item['title'],
+                builder: (_) => GroupDetailsScreen(
+                  groupSlug: group.slug,
+                  userId: widget.userId,
+                  userName: widget.userName,
                 ),
               ),
             );
@@ -1238,12 +1367,16 @@ class _SkinovaProductsScreenState extends State<SkinovaProductsScreen>
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              image: DecorationImage(
-                image: AssetImage(item['image']!),
-                fit: BoxFit.cover,
-                opacity: 0.35,
-              ),
               color: const Color(0xFFF6F4F2),
+              image: group.coverImage.isNotEmpty
+                  ? DecorationImage(
+                      image: group.coverImage.startsWith("http")
+                          ? NetworkImage(group.coverImage)
+                          : AssetImage(group.coverImage) as ImageProvider,
+                      fit: BoxFit.cover,
+                      opacity: 0.35,
+                    )
+                  : null,
             ),
             child: Container(
               decoration: BoxDecoration(
@@ -1253,7 +1386,7 @@ class _SkinovaProductsScreenState extends State<SkinovaProductsScreen>
               alignment: Alignment.bottomLeft,
               padding: const EdgeInsets.all(16),
               child: Text(
-                item['title']!,
+                group.title,
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,

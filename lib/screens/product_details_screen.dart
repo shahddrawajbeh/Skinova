@@ -15,6 +15,31 @@ class ProductDetailsScreen extends StatefulWidget {
     required this.userId,
     required this.userName,
   });
+  Color _getPostTypeColor(String postType) {
+    switch (postType.toLowerCase()) {
+      case "question":
+        return const Color(0xFFF3D86B);
+      case "review":
+        return const Color(0xFF6BA4D9);
+      case "update":
+        return const Color(0xFF8BC48A);
+      default:
+        return const Color(0xFFB0B0B0);
+    }
+  }
+
+  Color _getPostTypeTextColor(String postType) {
+    switch (postType.toLowerCase()) {
+      case "question":
+        return const Color(0xFF5A4A00);
+      case "review":
+        return Colors.white;
+      case "update":
+        return Colors.white;
+      default:
+        return Colors.white;
+    }
+  }
 
   @override
   State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
@@ -246,8 +271,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                             userId: widget.userId,
                                             userName: widget.userName,
                                             rating: selectedStars.toDouble(),
+                                            title: "",
                                             comment:
                                                 reviewController.text.trim(),
+                                            repurchase: null,
+                                            improvedSkin: null,
+                                            wasGift: null,
+                                            adverseReaction: null,
+                                            texture: "",
+                                            usageWeeks: "",
                                           );
 
                                           if (!mounted) return;

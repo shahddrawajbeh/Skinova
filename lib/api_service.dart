@@ -4,9 +4,11 @@ import 'product_model.dart';
 import 'user_model.dart';
 import 'dart:io';
 import '../admin_story_user_model.dart';
+import '../group_model.dart';
+import 'screens/post_page.dart';
 
 class ApiService {
-  static const String baseUrl = "http://192.168.1.7:5000";
+  static const String baseUrl = "http://192.168.1.22:5000";
   static Future<String?> uploadProfileImage({
     required String userId,
     required File imageFile,
@@ -332,7 +334,14 @@ class ApiService {
     required String userId,
     required String userName,
     required double rating,
+    required String title,
     required String comment,
+    bool? repurchase,
+    bool? improvedSkin,
+    bool? wasGift,
+    bool? adverseReaction,
+    String texture = "",
+    String usageWeeks = "",
   }) async {
     final response = await http.post(
       Uri.parse("$baseUrl/api/products/$productId/reviews"),
@@ -341,7 +350,14 @@ class ApiService {
         "userId": userId,
         "userName": userName,
         "rating": rating,
+        "title": title,
         "comment": comment,
+        "repurchase": repurchase,
+        "improvedSkin": improvedSkin,
+        "wasGift": wasGift,
+        "adverseReaction": adverseReaction,
+        "texture": texture,
+        "usageWeeks": usageWeeks,
       }),
     );
 
@@ -468,6 +484,407 @@ class ApiService {
       return data['count'] ?? 0;
     } else {
       throw Exception('Failed to load products count');
+    }
+  }
+
+  static Future<GroupModel> fetchGroupBySlug(String slug) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/groups/$slug"),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return GroupModel.fromJson(data);
+    } else {
+      throw Exception("Failed to fetch group");
+    }
+  }
+
+  static Future<List<ProductModel>> fetchGroupProducts(String slug) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/groups/$slug/products"),
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((e) => ProductModel.fromJson(e)).toList();
+    } else {
+      throw Exception("Failed to fetch group products");
+    }
+  }
+
+  static Future<List<GroupModel>> fetchGroups() async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/groups"),
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((e) => GroupModel.fromJson(e)).toList();
+    } else {
+      throw Exception("Failed to fetch groups");
+    }
+  }
+
+  static Future<bool> joinGroup({
+    required String slug,
+    required String userId,
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/groups/$slug/join"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "userId": userId,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      throw Exception("Failed to join group");
+    }
+  }
+
+  static Future<bool> fetchJoinStatus({
+    required String slug,
+    required String userId,
+  }) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/groups/$slug/join-status/$userId"),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data["isJoined"] ?? false;
+    } else {
+      throw Exception("Failed to fetch join status");
+    }
+  }
+
+  static Future<bool> leaveGroup({
+    required String slug,
+    required String userId,
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/groups/$slug/leave"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "userId": userId,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      throw Exception("Failed to leave group");
+    }
+  }
+
+  static Future<Map<String, dynamic>> addReviewPost({
+    required String userId,
+    required String userName,
+    required String userAvatar,
+    required String content,
+    required String productId,
+    required String productName,
+    required String productImage,
+    required double rating,
+    required bool? repurchase,
+    required bool? improvedSkin,
+    required bool? wasGift,
+    required bool? adverseReaction,
+    required String texture,
+    required String usageWeeks,
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/group-posts/review"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "userId": userId,
+        "userName": userName,
+        "userAvatar": userAvatar,
+        "content": content,
+        "productId": productId,
+        "productName": productName,
+        "productImage": productImage,
+        "rating": rating,
+        "repurchase": repurchase,
+        "improvedSkin": improvedSkin,
+        "wasGift": wasGift,
+        "adverseReaction": adverseReaction,
+        "texture": texture,
+        "usageWeeks": usageWeeks,
+      }),
+    );
+
+    return {
+      "statusCode": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
+  }
+
+  static Future<List<GroupPostModel>> fetchPosts() async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/group-posts"),
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data
+          .map((e) => GroupPostModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } else {
+      throw Exception("Failed to load posts");
+    }
+  }
+
+  static Future<bool> deletePost(String postId) async {
+    final response = await http.delete(
+      Uri.parse("$baseUrl/api/group-posts/$postId"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    return response.statusCode == 200;
+  }
+
+  static Future<Map<String, dynamic>> toggleLike({
+    required String postId,
+    required String userId,
+  }) async {
+    final response = await http.put(
+      Uri.parse("$baseUrl/api/group-posts/$postId/like"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"userId": userId}),
+    );
+
+    return {
+      "statusCode": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
+  }
+
+  static Future<Map<String, dynamic>> addComment({
+    required String postId,
+    required String userId,
+    required String userName,
+    required String userAvatar,
+    required String comment,
+    String? parentCommentId,
+    String replyToUserName = "",
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/group-posts/$postId/comments"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "userId": userId,
+        "userName": userName,
+        "userAvatar": userAvatar,
+        "comment": comment,
+        "parentCommentId": parentCommentId,
+        "replyToUserName": replyToUserName,
+      }),
+    );
+
+    return {
+      "statusCode": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
+  }
+
+  static Future<Map<String, dynamic>> toggleSavePost({
+    required String userId,
+    required String postId,
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/auth/user/$userId/save-post/$postId"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    return {
+      "statusCode": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
+  }
+
+  static Future<List<GroupPostModel>> fetchSavedPosts(String userId) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/auth/user/$userId/saved-posts"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data
+          .map((e) => GroupPostModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } else {
+      throw Exception("Failed to load saved posts");
+    }
+  }
+
+  static Future<Map<String, dynamic>> toggleCommentLike({
+    required String postId,
+    required String commentId,
+    required String userId,
+  }) async {
+    final response = await http.put(
+      Uri.parse("$baseUrl/api/group-posts/$postId/comments/$commentId/like"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "userId": userId,
+      }),
+    );
+
+    return {
+      "statusCode": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
+  }
+
+  static Future<bool> deleteComment({
+    required String postId,
+    required String commentId,
+  }) async {
+    final response = await http.delete(
+      Uri.parse("$baseUrl/api/group-posts/$postId/comments/$commentId"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    return response.statusCode == 200;
+  }
+
+  static Future<bool> editComment({
+    required String postId,
+    required String commentId,
+    required String comment,
+  }) async {
+    final response = await http.put(
+      Uri.parse("$baseUrl/api/group-posts/$postId/comments/$commentId"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "comment": comment,
+      }),
+    );
+
+    return response.statusCode == 200;
+  }
+
+  static Future<List<GroupModel>> fetchGroupsByType(String groupType) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/groups/type/$groupType"),
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((e) => GroupModel.fromJson(e)).toList();
+    } else {
+      throw Exception("Failed to fetch groups by type");
+    }
+  }
+
+  static Future<Map<String, dynamic>> addQuestionPost({
+    required String userId,
+    required String userName,
+    required String userAvatar,
+    required String content,
+    required String productId,
+    required String productName,
+    required String productImage,
+    required String groupId,
+    required String groupTitle,
+    required String groupSlug,
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/group-posts/question"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "userId": userId,
+        "userName": userName,
+        "userAvatar": userAvatar,
+        "content": content,
+        "productId": productId,
+        "productName": productName,
+        "productImage": productImage,
+        "groupId": groupId,
+        "groupTitle": groupTitle,
+        "groupSlug": groupSlug,
+      }),
+    );
+
+    return {
+      "statusCode": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
+  }
+
+  static Future<bool> editPost({
+    required String postId,
+    required String content,
+  }) async {
+    final response = await http.put(
+      Uri.parse("$baseUrl/api/group-posts/$postId"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "content": content,
+      }),
+    );
+
+    return response.statusCode == 200;
+  }
+
+  static Future<Map<String, dynamic>> addUpdatePost({
+    required String userId,
+    required String userName,
+    required String userAvatar,
+    required String content,
+    required String productId,
+    required String productName,
+    required String productImage,
+    required String groupId,
+    required String groupTitle,
+    required String groupSlug,
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/group-posts/update"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "userId": userId,
+        "userName": userName,
+        "userAvatar": userAvatar,
+        "content": content,
+        "productId": productId,
+        "productName": productName,
+        "productImage": productImage,
+        "groupId": groupId,
+        "groupTitle": groupTitle,
+        "groupSlug": groupSlug,
+      }),
+    );
+
+    return {
+      "statusCode": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
+  }
+
+  static Future<String?> uploadPostImage(File imageFile) async {
+    final request = http.MultipartRequest(
+      "POST",
+      Uri.parse("$baseUrl/api/group-posts/upload"),
+    );
+
+    request.files.add(
+      await http.MultipartFile.fromPath("image", imageFile.path),
+    );
+
+    final response = await request.send();
+    final responseData = await response.stream.bytesToString();
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(responseData);
+      return data["imageUrl"];
+    } else {
+      return null;
     }
   }
 }

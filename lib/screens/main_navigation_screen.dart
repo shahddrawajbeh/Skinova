@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'skinova_products_screen.dart';
 import 'profile_screen.dart';
+import 'package:skinnova/screens/post_page.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   final String userId;
@@ -22,7 +23,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   List<Widget> get pages => [
         const HomeScreen(),
-        const _PlaceholderPage(title: "Posts"),
+        PostPage(
+          userId: widget.userId,
+          userName: widget.userName,
+        ),
         const _PlaceholderPage(title: "Scan"),
         SkinovaProductsScreen(userId: widget.userId, userName: widget.userName),
         ProfileScreen(userId: widget.userId),
@@ -47,18 +51,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       body: pages[selectedIndex],
       extendBody: true,
       bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+        minimum: const EdgeInsets.fromLTRB(14, 0, 14, 10),
         child: Container(
-          height: 82,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          height: 68,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
+            color: Colors.white.withOpacity(0.88),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.35),
+            ),
             boxShadow: [
               BoxShadow(
-                color: wine.withOpacity(0.08),
-                blurRadius: 18,
-                offset: const Offset(0, 6),
+                color: wine.withOpacity(0.06),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -68,7 +75,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
               return Expanded(
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius: BorderRadius.circular(18),
                   onTap: () => _onTap(index),
                   child: SizedBox(
                     height: double.infinity,
@@ -77,17 +84,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       children: [
                         Icon(
                           navIcons[index],
-                          size: 20,
-                          color: isSelected ? wine : Colors.black,
+                          size: 18,
+                          color: isSelected ? wine : Colors.black87,
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         Text(
                           _navLabel(index),
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight:
                                 isSelected ? FontWeight.w600 : FontWeight.w500,
-                            color: isSelected ? wine : Colors.black,
+                            color: isSelected ? wine : Colors.black87,
                           ),
                         ),
                       ],

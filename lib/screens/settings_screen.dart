@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'saved_posts_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+  final String userId;
+  final String userName;
+
+  const SettingsScreen({
+    super.key,
+    required this.userId,
+    required this.userName,
+  });
 
   static const Color bg = Colors.white;
   static const Color cardColor = Color(0xFFF7F7F7);
@@ -46,6 +54,17 @@ class SettingsScreen extends StatelessWidget {
                   _settingsTile(
                     icon: Icons.star_border_rounded,
                     title: "Saved posts",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SavedPostsScreen(
+                            userId: userId,
+                            userName: userName,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   _settingsTile(
                     icon: Icons.notifications_none_rounded,

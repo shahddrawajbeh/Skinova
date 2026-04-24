@@ -198,50 +198,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               _buildSectionHeader("Main Sections"),
               const SizedBox(height: 14),
               _buildMiniCardsSection(),
-              // _buildSectionHeader("Main Sections"),
-              // const SizedBox(height: 14),
-              // _buildMainCard(
-              //   title: "Users",
-              //   subtitle:
-              //       "Manage users, view their accounts, and control permissions.",
-              //   icon: Icons.people_alt_outlined,
-              //   onTap: () {},
-              // ),
-              // const SizedBox(height: 14),
-              // _buildMainCard(
-              //   title: "Products",
-              //   subtitle:
-              //       "Add products, edit items, and keep your product list organized.",
-              //   icon: Icons.inventory_2_outlined,
-              //   onTap: () {
-              //     Navigator.push(
-              //       context,
-              //       MaterialPageRoute(
-              //         builder: (_) => const AddProductPage(),
-              //       ),
-              //     );
-              //   },
-              // ),
-              // const SizedBox(height: 14),
-              // _buildMainCard(
-              //   title: "Groups",
-              //   subtitle:
-              //       "Create and manage groups with image, title, and display details.",
-              //   icon: Icons.grid_view_rounded,
-              //   onTap: () {},
-              // ),
-              const SizedBox(height: 24),
-              _buildSectionHeader("Quick Overview"),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(child: _buildStatCard("124", "Users")),
-                  const SizedBox(width: 10),
-                  Expanded(child: _buildStatCard("24", "Products")),
-                  const SizedBox(width: 10),
-                  Expanded(child: _buildStatCard("08", "Groups")),
-                ],
-              ),
               const SizedBox(height: 24),
               _buildSectionHeader("Quick Actions"),
               const SizedBox(height: 14),
