@@ -6,9 +6,12 @@ import 'dart:io';
 import '../admin_story_user_model.dart';
 import '../group_model.dart';
 import 'screens/post_page.dart';
+import 'app_user_model.dart';
+import '../active_ingredient_model.dart';
+import '../medication_model.dart';
 
 class ApiService {
-  static const String baseUrl = "http://192.168.1.22:5000";
+  static const String baseUrl = "http://192.168.1.15:5000";
   static Future<String?> uploadProfileImage({
     required String userId,
     required File imageFile,
@@ -395,6 +398,7 @@ class ApiService {
   static Future<List<UserCollectionModel>?> addCollection({
     required String userId,
     required String title,
+    List<String> images = const [],
   }) async {
     try {
       final response = await http.post(
@@ -402,7 +406,7 @@ class ApiService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'title': title,
-          'images': [],
+          'images': images,
         }),
       );
 
@@ -885,6 +889,336 @@ class ApiService {
       return data["imageUrl"];
     } else {
       return null;
+    }
+  }
+//   static Future<List<GroupModel>> fetchGroupsByType(String groupType) async {
+//   final response = await http.get(
+//     Uri.parse("$baseUrl/api/groups/type/$groupType"),
+//   );
+
+//   if (response.statusCode == 200) {
+//     final List data = jsonDecode(response.body);
+//     return data.map((e) => GroupModel.fromJson(e)).toList();
+//   } else {
+//     throw Exception("Failed to load groups");
+//   }
+// }
+  static Future<List<AppUserModel>> fetchGroupPeople(String groupSlug) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/groups/$groupSlug/people"),
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((e) => AppUserModel.fromJson(e)).toList();
+    } else {
+      throw Exception("Failed to load group people");
+    }
+  }
+
+  static Future<List<GroupPostModel>> fetchPostsByGroup(
+      String groupSlug) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/group-posts/group/$groupSlug"),
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((e) => GroupPostModel.fromJson(e)).toList();
+    } else {
+      throw Exception("Failed to load group discussions");
+    }
+  }
+
+  static Future<List<GroupPostModel>> fetchProductCategoryDiscussionPosts(
+      String groupSlug) async {
+    final response = await http.get(
+      Uri.parse(
+          "$baseUrl/api/group-posts/product-category-discussion/$groupSlug"),
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data
+          .map((e) => GroupPostModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } else {
+      throw Exception("Failed to load product category discussion posts");
+    }
+  }
+
+  static Future<List<ProductModel>> fetchProductsByBrand(String brand) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/products/brand/$brand"),
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((e) => ProductModel.fromJson(e)).toList();
+    } else {
+      throw Exception("Failed to load products by brand");
+    }
+  }
+
+  static Future<List<GroupPostModel>> fetchReviewPostsByProduct(
+      String productId) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/group-posts/product-review-posts/$productId"),
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data
+          .map((e) => GroupPostModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } else {
+      throw Exception("Failed to load product review posts");
+    }
+  }
+
+  // static Future<bool> addProductToCollection({
+  //   required String collectionId,
+  //   required String imageUrl,
+  // }) async {
+  //   final response = await http.put(
+  //     Uri.parse('$baseUrl/api/auth/collection/$collectionId/add-product'),
+  //     headers: {'Content-Type': 'application/json'},
+  //     body: jsonEncode({
+  //       'imageUrl': imageUrl,
+  //     }),
+  //   );
+
+  //   return response.statusCode == 200;
+  // }
+  static Future<bool> addProductToCollection({
+    required String collectionId,
+    required String imageUrl,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/api/auth/collection/$collectionId/add-product'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'imageUrl': imageUrl,
+      }),
+    );
+
+    print("ADD TO COLLECTION STATUS: ${response.statusCode}");
+    print("ADD TO COLLECTION BODY: ${response.body}");
+
+    return response.statusCode == 200;
+  }
+
+  static Future<bool> isProductInAnyCollection({
+    required String userId,
+    required String imageUrl,
+  }) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/auth/user/$userId"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    print("SAVED STATE STATUS: ${response.statusCode}");
+    print("SAVED STATE BODY: ${response.body}");
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      final List collections = data["collections"] ?? [];
+
+      for (final collection in collections) {
+        final List images = collection["images"] ?? [];
+
+        if (images.contains(imageUrl)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static Future<List<ActiveIngredientModel>> fetchActiveIngredients() async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/ingredients"),
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+
+      return data
+          .map((e) => ActiveIngredientModel.fromJson(
+                Map<String, dynamic>.from(e),
+              ))
+          .toList();
+    } else {
+      throw Exception("Failed to load active ingredients");
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchActiveIngredientDetails(
+    String slug,
+  ) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/ingredients/$slug"),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Failed to load ingredient details");
+    }
+  }
+
+  static Future<List<ProductModel>> fetchProductsByConcern(
+      String concern) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/products/concern/$concern"),
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((e) => ProductModel.fromJson(e)).toList();
+    } else {
+      throw Exception("Failed to load products by concern");
+    }
+  }
+
+  static Future<List<GroupPostModel>> fetchMedicationDiscussionPosts(
+    String groupSlug,
+  ) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/group-posts/medication-discussion/$groupSlug"),
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data
+          .map((e) => GroupPostModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } else {
+      throw Exception("Failed to load medication discussion posts");
+    }
+  }
+
+  static Future<List<MedicationModel>> fetchMedicationsByCondition(
+    String condition,
+  ) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/medications/condition/$condition"),
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((e) => MedicationModel.fromJson(e)).toList();
+    } else {
+      throw Exception("Failed to load medications");
+    }
+  }
+
+  static Future<Map<String, dynamic>> scanProductImage({
+    required File imageFile,
+    required String userId,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/product-scan');
+
+    final request = http.MultipartRequest('POST', uri);
+
+    request.fields['userId'] = userId;
+
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'image',
+        imageFile.path,
+      ),
+    );
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    return {
+      "statusCode": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
+  }
+
+  static Future<List<dynamic>> fetchScanHistory(String userId) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/product-scan/history/$userId"),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Failed to load scan history");
+    }
+  }
+
+  static Future<bool> deleteScanHistory(String scanId) async {
+    final response = await http.delete(
+      Uri.parse("$baseUrl/api/product-scan/history/$scanId"),
+    );
+
+    return response.statusCode == 200;
+  }
+
+  static Future<Map<String, dynamic>> analyzeProductWithAI({
+    required String productId,
+    String userSkinType = "",
+    List<String> userConcerns = const [],
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/product-analyze"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "productId": productId,
+        "userSkinType": userSkinType,
+        "userConcerns": userConcerns,
+      }),
+    );
+
+    return {
+      "statusCode": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
+  }
+
+  static Future<bool> followUser({
+    required String targetUserId,
+    required String currentUserId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/$targetUserId/follow'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'currentUserId': currentUserId,
+        }),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print("FOLLOW USER ERROR: $e");
+      return false;
+    }
+  }
+
+  static Future<bool> unfollowUser({
+    required String targetUserId,
+    required String currentUserId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/$targetUserId/unfollow'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'currentUserId': currentUserId,
+        }),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print("UNFOLLOW USER ERROR: $e");
+      return false;
     }
   }
 }

@@ -12,6 +12,9 @@ import 'product_details_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'group_details_screen.dart';
 import '../group_model.dart';
+import '../active_ingredient_model.dart';
+import 'ingredient_details_screen.dart';
+import 'scan_page.dart';
 
 class SkinovaProductsScreen extends StatefulWidget {
   final String userId;
@@ -51,9 +54,52 @@ class _SkinovaProductsScreenState extends State<SkinovaProductsScreen>
   List<ProductModel> recommendedProducts = [];
   List<GroupModel> allGroups = [];
   bool isLoadingGroups = true;
+  bool isLoadingIngredients = true;
+  List<ActiveIngredientModel> activeIngredients = [];
+  List<GroupModel> medicationGroups = [];
+  bool isLoadingMedicationGroups = true;
+  Future<void> loadMedicationGroups() async {
+    try {
+      final loadedGroups = await ApiService.fetchGroupsByType("medications");
+
+      if (!mounted) return;
+
+      setState(() {
+        medicationGroups = loadedGroups;
+        isLoadingMedicationGroups = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        isLoadingMedicationGroups = false;
+      });
+      debugPrint("Load medication groups error: $e");
+    }
+  }
+
+  Future<void> loadActiveIngredients() async {
+    try {
+      final loadedIngredients = await ApiService.fetchActiveIngredients();
+
+      if (!mounted) return;
+
+      setState(() {
+        activeIngredients = loadedIngredients;
+        isLoadingIngredients = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        isLoadingIngredients = false;
+      });
+      debugPrint("Load ingredients error: $e");
+    }
+  }
+
   Future<void> loadGroups() async {
     try {
-      final loadedGroups = await ApiService.fetchGroups();
+      final loadedGroups =
+          await ApiService.fetchGroupsByType("product_categories");
 
       if (!mounted) return;
 
@@ -170,23 +216,26 @@ class _SkinovaProductsScreenState extends State<SkinovaProductsScreen>
     'Normal',
   ];
 
-  final List<Map<String, dynamic>> quickActions = [
-    {
-      'title': 'Scan',
-      'icon': 'assets/icons/scan.svg',
-      'page': const ScanPage(),
-    },
-    {
-      'title': 'Compare',
-      'icon': 'assets/icons/compare.svg',
-      'page': const ComparePage(),
-    },
-    {
-      'title': 'Analyze',
-      'icon': 'assets/icons/analyze.svg',
-      'page': const AnalyzePage(),
-    },
-  ];
+  List<Map<String, dynamic>> get quickActions => [
+        {
+          'title': 'Scan',
+          'icon': 'assets/icons/scan.svg',
+          'page': ScanPage(
+            userId: widget.userId,
+            userName: widget.userName,
+          ),
+        },
+        {
+          'title': 'Compare',
+          'icon': 'assets/icons/compare.svg',
+          'page': const ComparePage(),
+        },
+        {
+          'title': 'Analyze',
+          'icon': 'assets/icons/analyze.svg',
+          'page': const AnalyzePage(),
+        },
+      ];
 
   @override
   void initState() {
@@ -201,6 +250,8 @@ class _SkinovaProductsScreenState extends State<SkinovaProductsScreen>
     loadCartCount();
     loadProducts();
     loadGroups();
+    loadActiveIngredients();
+    loadMedicationGroups();
   }
 
   Future<void> loadCartCount() async {
@@ -326,11 +377,11 @@ class _SkinovaProductsScreenState extends State<SkinovaProductsScreen>
           labelColor: const Color(0xFF202124),
           unselectedLabelColor: const Color(0xFF9B9B9B),
           labelStyle: GoogleFonts.poppins(
-            fontSize: 15,
+            fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
           unselectedLabelStyle: GoogleFonts.poppins(
-            fontSize: 15,
+            fontSize: 13,
             fontWeight: FontWeight.w400,
           ),
           splashFactory: NoSplash.splashFactory,
@@ -433,82 +484,6 @@ class _SkinovaProductsScreenState extends State<SkinovaProductsScreen>
                               ),
                             ],
                           ),
-                          // Row(
-                          //   children: [
-                          //     Expanded(
-                          //       child: Text(
-                          //         'Products',
-                          //         style: GoogleFonts.poppins(
-                          //           fontSize: 28,
-                          //           fontWeight: FontWeight.w500,
-                          //           color: Colors.black,
-                          //         ),
-                          //       ),
-                          //     ),
-                          //     GestureDetector(
-                          //       onTap: () async {
-                          //         await Navigator.push(
-                          //           context,
-                          //           MaterialPageRoute(
-                          //             builder: (_) =>
-                          //                 CartScreen(userId: widget.userId),
-                          //           ),
-                          //         );
-                          //         loadCartCount();
-                          //       },
-                          //       child: Stack(
-                          //         clipBehavior: Clip.none,
-                          //         children: [
-                          //           Container(
-                          //             width: 48,
-                          //             height: 48,
-                          //             decoration: BoxDecoration(
-                          //               color: Colors.white,
-                          //               borderRadius: BorderRadius.circular(16),
-                          //               boxShadow: [
-                          //                 BoxShadow(
-                          //                   color: wine.withOpacity(0.05),
-                          //                   blurRadius: 10,
-                          //                   offset: const Offset(0, 4),
-                          //                 ),
-                          //               ],
-                          //               border: Border.all(
-                          //                 color: wine.withOpacity(0.10),
-                          //               ),
-                          //             ),
-                          //             child: const Icon(
-                          //               Icons.shopping_bag_outlined,
-                          //               color: wine,
-                          //               size: 22,
-                          //             ),
-                          //           ),
-                          //           if (cartCount > 0)
-                          //             Positioned(
-                          //               right: -2,
-                          //               top: -2,
-                          //               child: Container(
-                          //                 width: 20,
-                          //                 height: 20,
-                          //                 decoration: const BoxDecoration(
-                          //                   color: wine,
-                          //                   shape: BoxShape.circle,
-                          //                 ),
-                          //                 alignment: Alignment.center,
-                          //                 child: Text(
-                          //                   '$cartCount',
-                          //                   style: GoogleFonts.poppins(
-                          //                     color: Colors.white,
-                          //                     fontSize: 10,
-                          //                     fontWeight: FontWeight.w600,
-                          //                   ),
-                          //                 ),
-                          //               ),
-                          //             ),
-                          //         ],
-                          //       ),
-                          //     ),
-                          //   ],
-                          // ),
                           const SizedBox(height: 18),
                           _buildQuickActions(),
                           const SizedBox(height: 18),
@@ -516,16 +491,40 @@ class _SkinovaProductsScreenState extends State<SkinovaProductsScreen>
                           const SizedBox(height: 14),
                           _buildTopTabs(),
                           const SizedBox(height: 24),
-                          Text(
-                            'Search by category',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF202124),
+                          if (_tabController.index == 0) ...[
+                            Text(
+                              'Search by category',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF202124),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildCategoryGrid(),
+                            const SizedBox(height: 16),
+                            _buildCategoryGrid(),
+                          ] else if (_tabController.index == 1) ...[
+                            Text(
+                              'Browse ingredients',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF202124),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildIngredientsGrid(),
+                          ] else ...[
+                            Text(
+                              'Skin condition groups',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF202124),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildMedicationGroupsGrid(),
+                          ],
                         ],
                       ),
                     ),
@@ -547,6 +546,164 @@ class _SkinovaProductsScreenState extends State<SkinovaProductsScreen>
       default:
         return "Search";
     }
+  }
+
+  Widget _buildMedicationGroupsGrid() {
+    if (isLoadingMedicationGroups) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (medicationGroups.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Text(
+          "No medication groups found",
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: const Color(0xFF202124),
+          ),
+        ),
+      );
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: medicationGroups.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 14,
+        crossAxisSpacing: 14,
+        childAspectRatio: 1.75,
+      ),
+      itemBuilder: (context, index) {
+        final group = medicationGroups[index];
+
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => GroupDetailsScreen(
+                  groupSlug: group.slug,
+                  userId: widget.userId,
+                  userName: widget.userName,
+                ),
+              ),
+            );
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: const Color(0xFFF6F4F2),
+              image: group.coverImage.isNotEmpty
+                  ? DecorationImage(
+                      image: group.coverImage.startsWith("http")
+                          ? NetworkImage(group.coverImage)
+                          : AssetImage(group.coverImage) as ImageProvider,
+                      fit: BoxFit.cover,
+                      opacity: 0.35,
+                    )
+                  : null,
+            ),
+            alignment: Alignment.bottomLeft,
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              group.title,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF202124),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildIngredientsGrid() {
+    if (isLoadingIngredients) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (activeIngredients.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Text(
+          "No ingredients found",
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: const Color(0xFF202124),
+          ),
+        ),
+      );
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: activeIngredients.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 14,
+        crossAxisSpacing: 14,
+        childAspectRatio: 1.75,
+      ),
+      itemBuilder: (context, index) {
+        final ingredient = activeIngredients[index];
+
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => IngredientDetailsScreen(
+                  slug: ingredient.slug,
+                  userId: widget.userId,
+                  userName: widget.userName,
+                ),
+              ),
+            );
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: const Color(0xFFF7F4F3),
+              image: ingredient.imageUrl.isNotEmpty
+                  ? DecorationImage(
+                      image: ingredient.imageUrl.startsWith("http")
+                          ? NetworkImage(ingredient.imageUrl)
+                          : AssetImage(ingredient.imageUrl) as ImageProvider,
+                      fit: BoxFit.cover,
+                      opacity: 0.35,
+                    )
+                  : null,
+            ),
+            alignment: Alignment.bottomLeft,
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              "${ingredient.name} ",
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF202124),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildSearchAndFilterBar() {
@@ -1130,191 +1287,6 @@ class _SkinovaProductsScreenState extends State<SkinovaProductsScreen>
   static const Color mutedText = Color(0xFFB7B7B7);
   static const Color sliderBlue = Color(0xFF3A99F5);
 
-  // Widget _buildCategoryGrid() {
-  //   final List<Map<String, String>> categories = [
-  //     {
-  //       'title': 'After sun care',
-  //       'slug': 'after-sun-care',
-  //       'image': 'assets/categories/suncare.jpg',
-  //     },
-  //     {
-  //       'title': 'Blemish treatments',
-  //       'slug': 'blemish-treatments',
-  //       'image': 'assets/categories/belmish.jpg',
-  //     },
-  //     {
-  //       'title': 'Body lotions',
-  //       'slug': 'body-lotions',
-  //       'image': 'assets/categories/body_lotion.jpg',
-  //     },
-  //     {
-  //       'title': 'Body wash',
-  //       'slug': 'body-wash',
-  //       'image': 'assets/categories/body_wash.jpg',
-  //     },
-  //     {
-  //       'title': 'Cleansers',
-  //       'slug': 'cleansers',
-  //       'image': 'assets/categories/cleanser.jpg',
-  //     },
-  //     {
-  //       'title': 'Complexion',
-  //       'slug': 'complexion',
-  //       'image': 'assets/categories/complexion.jpg',
-  //     },
-  //     {
-  //       'title': 'Exfoliators',
-  //       'slug': 'exfoliators',
-  //       'image': 'assets/categories/exfoliators.jpg',
-  //     },
-  //     {
-  //       'title': 'Eye treatments',
-  //       'slug': 'eye-treatments',
-  //       'image': 'assets/categories/eye_treatment.jpg',
-  //     },
-  //     {
-  //       'title': 'Face masks',
-  //       'slug': 'face-masks',
-  //       'image': 'assets/categories/face_mask.jpg',
-  //     },
-  //     {
-  //       'title': 'Face mists',
-  //       'slug': 'face-mists',
-  //       'image': 'assets/categories/face_mist.webp',
-  //     },
-  //     {
-  //       'title': 'Face oils',
-  //       'slug': 'face-oils',
-  //       'image': 'assets/categories/face_oil.jpg',
-  //     },
-  //     {
-  //       'title': 'Foot treatments',
-  //       'slug': 'foot-treatments',
-  //       'image': 'assets/categories/foot_treatment.jpg',
-  //     },
-  //     {
-  //       'title': 'Fragrances',
-  //       'slug': 'fragrances',
-  //       'image': 'assets/categories/fragrances.webp',
-  //     },
-  //     {
-  //       'title': 'Gels',
-  //       'slug': 'gels',
-  //       'image': 'assets/categories/gels.jpg',
-  //     },
-  //     {
-  //       'title': 'Hair conditioners',
-  //       'slug': 'hair-conditioners',
-  //       'image': 'assets/categories/hair_conditioners.jpg',
-  //     },
-  //     {
-  //       'title': 'Hair shampoos',
-  //       'slug': 'hair-shampoos',
-  //       'image': 'assets/categories/hair_shampoos.jpg',
-  //     },
-  //     {
-  //       'title': 'Hand treatments',
-  //       'slug': 'hand-treatments',
-  //       'image': 'assets/categories/hand_treatments.webp',
-  //     },
-  //     {
-  //       'title': 'Lip treatments',
-  //       'slug': 'lip-treatments',
-  //       'image': 'assets/categories/lip_treatments.jpg',
-  //     },
-  //     {
-  //       'title': 'Moisturizers',
-  //       'slug': 'moisturizers',
-  //       'image': 'assets/categories/mois.jpg',
-  //     },
-  //     {
-  //       'title': 'Scrubs',
-  //       'slug': 'scrubs',
-  //       'image': 'assets/categories/scrubs.webp',
-  //     },
-  //     {
-  //       'title': 'Self tanners',
-  //       'slug': 'self-tanners',
-  //       'image': 'assets/categories/self_tanners.jpg',
-  //     },
-  //     {
-  //       'title': 'Serums',
-  //       'slug': 'serums',
-  //       'image': 'assets/categories/serums.jpg',
-  //     },
-  //     {
-  //       'title': 'Sunscreens',
-  //       'slug': 'sunscreens',
-  //       'image': 'assets/categories/sun_screen.jpg',
-  //     },
-  //     {
-  //       'title': 'Toners',
-  //       'slug': 'toners',
-  //       'image': 'assets/categories/toners.jpg',
-  //     },
-  //     {
-  //       'title': 'Tools',
-  //       'slug': 'tools',
-  //       'image': 'assets/categories/tools.jpg',
-  //     },
-  //   ];
-  //   return GridView.builder(
-  //     shrinkWrap: true,
-  //     physics: const NeverScrollableScrollPhysics(),
-  //     itemCount: categories.length,
-  //     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-  //       crossAxisCount: 2,
-  //       mainAxisSpacing: 14,
-  //       crossAxisSpacing: 14,
-  //       childAspectRatio: 1.75,
-  //     ),
-  //     itemBuilder: (context, index) {
-  //       final item = categories[index];
-
-  //       return GestureDetector(
-  //         onTap: () {
-  //           Navigator.push(
-  //             context,
-  //             MaterialPageRoute(
-  //               builder: (_) => GroupDetailsScreen(
-  //                 groupSlug: item['slug']!,
-  //                 userId: widget.userId,
-  //                 userName: widget.userName,
-  //               ),
-  //             ),
-  //           );
-  //         },
-  //         child: Container(
-  //           decoration: BoxDecoration(
-  //             borderRadius: BorderRadius.circular(20),
-  //             image: DecorationImage(
-  //               image: AssetImage(item['image']!),
-  //               fit: BoxFit.cover,
-  //               opacity: 0.35,
-  //             ),
-  //             color: const Color(0xFFF6F4F2),
-  //           ),
-  //           child: Container(
-  //             decoration: BoxDecoration(
-  //               borderRadius: BorderRadius.circular(20),
-  //               color: Colors.white.withOpacity(0.20),
-  //             ),
-  //             alignment: Alignment.bottomLeft,
-  //             padding: const EdgeInsets.all(16),
-  //             child: Text(
-  //               item['title']!,
-  //               style: GoogleFonts.poppins(
-  //                 fontSize: 14,
-  //                 fontWeight: FontWeight.w500,
-  //                 color: const Color(0xFF202124),
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
   Widget _buildCategoryGrid() {
     if (isLoadingGroups) {
       return const Center(
@@ -1572,70 +1544,6 @@ class _SkinovaProductsScreenState extends State<SkinovaProductsScreen>
       }).toList(),
     );
   }
-
-  // Widget _buildQuickActions() {
-  //   const Color pillColor = Colors.white;
-  //   const Color borderColor = Color(0xFFE9E5E2);
-  //   const Color textDark = Color(0xFF2F3A4A);
-
-  //   return SizedBox(
-  //     height: 104,
-  //     child: ListView.separated(
-  //       scrollDirection: Axis.horizontal,
-  //       itemCount: quickActions.length,
-  //       separatorBuilder: (_, __) => const SizedBox(width: 12),
-  //       itemBuilder: (context, index) {
-  //         final item = quickActions[index];
-
-  //         return GestureDetector(
-  //           onTap: () {
-  //             Navigator.push(
-  //               context,
-  //               MaterialPageRoute(
-  //                 builder: (_) => item['page'] as Widget,
-  //               ),
-  //             );
-  //           },
-  //           child: SizedBox(
-  //             width: 96,
-  //             child: Column(
-  //               mainAxisAlignment: MainAxisAlignment.center,
-  //               children: [
-  //                 Container(
-  //                   width: 96,
-  //                   height: 54,
-  //                   decoration: BoxDecoration(
-  //                     color: Colors.white,
-  //                     borderRadius: BorderRadius.circular(27),
-  //                     border: Border.all(
-  //                       color: const Color(0xFFE9E5E2),
-  //                       width: 1.2,
-  //                     ),
-  //                   ),
-  //                   child: Center(
-  //                     child: _buildActionIcon(item['icon'] as String),
-  //                   ),
-  //                 ),
-  //                 const SizedBox(height: 10),
-  //                 Text(
-  //                   item['title'] as String,
-  //                   textAlign: TextAlign.center,
-  //                   maxLines: 1,
-  //                   overflow: TextOverflow.ellipsis,
-  //                   style: GoogleFonts.poppins(
-  //                     fontSize: 13.5,
-  //                     fontWeight: FontWeight.w500,
-  //                     color: textDark,
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //         );
-  //       },
-  //     ),
-  //   );
-  // }
 
   Widget _buildFinderCard() {
     return Container(

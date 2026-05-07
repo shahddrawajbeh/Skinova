@@ -4,6 +4,12 @@ import '../api_service.dart';
 import '../group_model.dart';
 import '../product_model.dart';
 import 'product_details_screen.dart';
+import '../app_user_model.dart';
+import 'post_page.dart';
+import 'question_post_screen.dart';
+import 'public_profile_screen.dart';
+import '../medication_model.dart';
+import 'medication_details_screen.dart';
 
 class GroupDetailsScreen extends StatefulWidget {
   final String groupSlug;
@@ -28,6 +34,14 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
 
   bool isJoined = false;
   bool isJoining = false;
+  List<AppUserModel> people = [];
+  bool peopleLoading = true;
+  int selectedGroupTab = 0; // 0 = People, 1 = Discussion
+  List<GroupPostModel> discussionPosts = [];
+  bool discussionLoading = true;
+  List<MedicationModel> medications = [];
+  bool medicationsLoading = true;
+  Set<String> followedUserIds = {};
 
   @override
   void initState() {
@@ -38,8 +52,60 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
   Future<void> loadGroupData() async {
     try {
       final loadedGroup = await ApiService.fetchGroupBySlug(widget.groupSlug);
-      final loadedProducts =
-          await ApiService.fetchGroupProducts(widget.groupSlug);
+
+      List<ProductModel> loadedProducts = [];
+      List<AppUserModel> loadedPeople = [];
+      final currentUser = await ApiService.fetchUserProfile(widget.userId);
+
+      // if (loadedGroup.groupType == "product_categories") {
+      //   loadedProducts = await ApiService.fetchGroupProducts(widget.groupSlug);
+      //   discussionPosts = await ApiService.fetchProductCategoryDiscussionPosts(
+      //       widget.groupSlug);
+      //   discussionLoading = false;
+      // } else {
+      //   loadedPeople = await ApiService.fetchGroupPeople(widget.groupSlug);
+      //   discussionPosts = await ApiService.fetchPostsByGroup(widget.groupSlug);
+      //   discussionLoading = false;
+      // }
+      if (loadedGroup.groupType == "product_categories") {
+        loadedProducts = await ApiService.fetchGroupProducts(widget.groupSlug);
+        discussionPosts = await ApiService.fetchProductCategoryDiscussionPosts(
+            widget.groupSlug);
+        discussionLoading = false;
+      } else if (loadedGroup.groupType == "medications") {
+        loadedProducts = await ApiService.fetchProductsByConcern(
+          loadedGroup.categoryKey,
+        );
+
+        loadedPeople = await ApiService.fetchGroupPeople(widget.groupSlug);
+
+        discussionPosts = await ApiService.fetchMedicationDiscussionPosts(
+          widget.groupSlug,
+        );
+
+        medications = await ApiService.fetchMedicationsByCondition(
+          loadedGroup.title,
+        );
+
+        discussionLoading = false;
+        medicationsLoading = false;
+      }
+      // } else if (loadedGroup.groupType == "medications") {
+      //   loadedProducts = await ApiService.fetchProductsByConcern(
+      //     loadedGroup.categoryKey,
+      //   );
+
+      //   loadedPeople = await ApiService.fetchGroupPeople(widget.groupSlug);
+      //   discussionPosts = await ApiService.fetchMedicationDiscussionPosts(
+      //     widget.groupSlug,
+      //   );
+      //   discussionLoading = false;
+      // }
+      else {
+        loadedPeople = await ApiService.fetchGroupPeople(widget.groupSlug);
+        discussionPosts = await ApiService.fetchPostsByGroup(widget.groupSlug);
+        discussionLoading = false;
+      }
       final joined = await ApiService.fetchJoinStatus(
         slug: widget.groupSlug,
         userId: widget.userId,
@@ -50,14 +116,18 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
       setState(() {
         group = loadedGroup;
         products = loadedProducts;
+        people = loadedPeople;
         isJoined = joined;
+        followedUserIds = currentUser?.following.map((u) => u.id).toSet() ?? {};
         isLoading = false;
+        peopleLoading = false;
       });
     } catch (e) {
       debugPrint("GROUP DETAILS ERROR: $e");
       if (!mounted) return;
       setState(() {
         isLoading = false;
+        peopleLoading = false;
       });
     }
   }
@@ -225,7 +295,7 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
         body: Center(child: Text("Group not found")),
       );
     }
-
+    final bool isMedicationGroup = group!.groupType == "medications";
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -259,26 +329,31 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
+                    //if (!isMedicationGroup)
                     Stack(
                       clipBehavior: Clip.none,
                       children: [
                         Container(
                           height: 180,
                           width: double.infinity,
-                          color: const Color(0xFFF5F5F5),
-                          child: group!.coverImage.isNotEmpty
-                              ? (group!.coverImage.startsWith("http")
-                                  ? Image.network(
-                                      group!.coverImage,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) =>
-                                          const SizedBox(),
-                                    )
-                                  : Image.asset(
-                                      group!.coverImage,
-                                      fit: BoxFit.cover,
-                                    ))
-                              : const SizedBox(),
+                          color: isMedicationGroup
+                              ? Colors.white
+                              : const Color(0xFFF5F5F5),
+                          child: isMedicationGroup
+                              ? const SizedBox()
+                              : group!.coverImage.isNotEmpty
+                                  ? (group!.coverImage.startsWith("http")
+                                      ? Image.network(
+                                          group!.coverImage,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              const SizedBox(),
+                                        )
+                                      : Image.asset(
+                                          group!.coverImage,
+                                          fit: BoxFit.cover,
+                                        ))
+                                  : const SizedBox(),
                         ),
                         Positioned(
                           top: 16,
@@ -321,7 +396,7 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                                         : (isJoined ? "Leave" : "Join"),
                                     style: GoogleFonts.poppins(
                                       color: Colors.white,
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight: FontWeight.w500,
                                       fontSize: 12.5,
                                     ),
                                   ),
@@ -357,7 +432,7 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 70),
+                    SizedBox(height: isMedicationGroup ? 18 : 70),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
@@ -394,7 +469,14 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    _buildProductsList(),
+                    // _buildProductsList(),
+                    group!.groupType == "product_categories"
+                        ? _buildProductsAndDiscussionTabs()
+                        : group!.groupType == "medications"
+                            ? _buildMedicationGroupTabs()
+                            : group!.groupType == "skin_tones"
+                                ? _buildPeopleOnlySection()
+                                : _buildPeopleAndDiscussionTabs(),
                   ],
                 ),
               ),
@@ -402,6 +484,574 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMedicationGroupTabs() {
+    final tabs = ["Products", "People", "Discussion", "Medications"];
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: List.generate(tabs.length, (index) {
+            final selected = selectedGroupTab == index;
+
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  selectedGroupTab = index;
+                });
+              },
+              child: Column(
+                children: [
+                  Text(
+                    tabs[index],
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: selected ? const Color(0xFF202124) : Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 38,
+                    height: 2,
+                    color:
+                        selected ? const Color(0xFF202124) : Colors.transparent,
+                  ),
+                ],
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 18),
+        if (selectedGroupTab == 0)
+          _buildProductsList()
+        else if (selectedGroupTab == 1)
+          _buildPeopleList()
+        else if (selectedGroupTab == 2)
+          _buildDiscussionPlaceholder()
+        else
+          _buildMedicationsList(),
+      ],
+    );
+  }
+
+  Widget _buildMedicationsList() {
+    if (medicationsLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (medications.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Text(
+          "No medications found",
+          style: GoogleFonts.poppins(fontSize: 15),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      itemCount: medications.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 14),
+      itemBuilder: (context, index) {
+        final med = medications[index];
+
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MedicationDetailsScreen(medication: med),
+              ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFEDEDED)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  med.name,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "Sold as: ${med.soldAs.join(", ")}",
+                  style: GoogleFonts.poppins(fontSize: 13),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  med.description,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: Colors.grey,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "See more",
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: Colors.blue,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProductsAndDiscussionTabs() {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  selectedGroupTab = 0;
+                });
+              },
+              child: Text(
+                "Products",
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w400,
+                  color: selectedGroupTab == 0
+                      ? const Color(0xFF5B2333)
+                      : Colors.grey,
+                ),
+              ),
+            ),
+            const SizedBox(width: 50),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  selectedGroupTab = 1;
+                });
+              },
+              child: Text(
+                "Discussion",
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w400,
+                  color: selectedGroupTab == 1
+                      ? const Color(0xFF5B2333)
+                      : Colors.grey,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        selectedGroupTab == 0
+            ? _buildProductsList()
+            : _buildDiscussionPlaceholder(),
+      ],
+    );
+  }
+
+  Widget _buildPeopleOnlySection() {
+    return Column(
+      children: [
+        Text(
+          "People",
+          style: GoogleFonts.poppins(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF5B2333),
+          ),
+        ),
+        const SizedBox(height: 18),
+        _buildPeopleList(),
+      ],
+    );
+  }
+
+  Widget _buildPeopleAndDiscussionTabs() {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  selectedGroupTab = 0;
+                });
+              },
+              child: Text(
+                "People",
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w400,
+                  color: selectedGroupTab == 0
+                      ? const Color(0xFF5B2333)
+                      : Colors.grey,
+                ),
+              ),
+            ),
+            const SizedBox(width: 50),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  selectedGroupTab = 1;
+                });
+              },
+              child: Text(
+                "Discussion",
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w400,
+                  color: selectedGroupTab == 1
+                      ? const Color(0xFF5B2333)
+                      : Colors.grey,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        selectedGroupTab == 0
+            ? _buildPeopleList()
+            : _buildDiscussionPlaceholder(),
+        // peopleLoading
+        //     ? const Center(child: CircularProgressIndicator())
+        //     : people.isEmpty
+        //         ? Padding(
+        //             padding: const EdgeInsets.all(20),
+        //             child: Text(
+        //               "No people found",
+        //               style: GoogleFonts.poppins(fontSize: 14),
+        //             ),
+        //           )
+        //         : ListView.separated(
+        //             shrinkWrap: true,
+        //             physics: const NeverScrollableScrollPhysics(),
+        //             padding: const EdgeInsets.all(16),
+        //             itemCount: people.length,
+        //             separatorBuilder: (_, __) => const SizedBox(height: 14),
+        //             itemBuilder: (context, index) {
+        //               final user = people[index];
+
+        //               return Container(
+        //                 padding: const EdgeInsets.all(14),
+        //                 decoration: BoxDecoration(
+        //                   color: Colors.white,
+        //                   borderRadius: BorderRadius.circular(22),
+        //                   border: Border.all(color: const Color(0xFFF0F0F0)),
+        //                 ),
+        //                 child: Row(
+        //                   children: [
+        //                     CircleAvatar(
+        //                       radius: 28,
+        //                       backgroundImage: user.profileImage.isNotEmpty
+        //                           ? NetworkImage(user.profileImage)
+        //                           : null,
+        //                       child: user.profileImage.isEmpty
+        //                           ? Text(
+        //                               user.fullName.isNotEmpty
+        //                                   ? user.fullName[0].toUpperCase()
+        //                                   : "U",
+        //                             )
+        //                           : null,
+        //                     ),
+        //                     const SizedBox(width: 14),
+        //                     Expanded(
+        //                       child: Text(
+        //                         user.fullName,
+        //                         style: GoogleFonts.poppins(
+        //                           fontSize: 15,
+        //                           fontWeight: FontWeight.w600,
+        //                         ),
+        //                       ),
+        //                     ),
+        //                     user.id == widget.userId
+        //                         ? const SizedBox() // ما يطلع زر لنفسك
+        //                         : Container(
+        //                             padding: const EdgeInsets.symmetric(
+        //                               horizontal: 18,
+        //                               vertical: 9,
+        //                             ),
+        //                             decoration: BoxDecoration(
+        //                               color: const Color(0xFF5B2333),
+        //                               borderRadius: BorderRadius.circular(12),
+        //                             ),
+        //                             child: Text(
+        //                               "Follow",
+        //                               style: GoogleFonts.poppins(
+        //                                 color: Colors.white,
+        //                                 fontWeight: FontWeight.w500,
+        //                               ),
+        //                             ),
+        //                           ),
+        //                   ],
+        //                 ),
+        //               );
+        //             },
+        //           ),
+      ],
+    );
+  }
+
+  Widget _buildPeopleList() {
+    return peopleLoading
+        ? const Center(child: CircularProgressIndicator())
+        : people.isEmpty
+            ? Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(
+                  "No people found",
+                  style: GoogleFonts.poppins(fontSize: 14),
+                ),
+              )
+            : ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                itemCount: people.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 14),
+                itemBuilder: (context, index) {
+                  final user = people[index];
+
+                  return GestureDetector(
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PublicProfileScreen(
+                            viewedUserId: user.id,
+                            currentUserId: widget.userId,
+                          ),
+                        ),
+                      );
+
+                      await loadGroupData();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: const Color(0xFFF0F0F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 28,
+                            backgroundImage: user.profileImage.isNotEmpty
+                                ? NetworkImage(user.profileImage)
+                                : null,
+                            child: user.profileImage.isEmpty
+                                ? Text(
+                                    user.fullName.isNotEmpty
+                                        ? user.fullName[0].toUpperCase()
+                                        : "U",
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Text(
+                              user.fullName,
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          user.id == widget.userId
+                              ? const SizedBox()
+                              : GestureDetector(
+                                  onTap: () async {
+                                    final alreadyFollowing =
+                                        followedUserIds.contains(user.id);
+
+                                    final success = alreadyFollowing
+                                        ? await ApiService.unfollowUser(
+                                            targetUserId: user.id,
+                                            currentUserId: widget.userId,
+                                          )
+                                        : await ApiService.followUser(
+                                            targetUserId: user.id,
+                                            currentUserId: widget.userId,
+                                          );
+
+                                    if (success) {
+                                      setState(() {
+                                        if (alreadyFollowing) {
+                                          followedUserIds.remove(user.id);
+                                        } else {
+                                          followedUserIds.add(user.id);
+                                        }
+                                      });
+
+                                      _showPrettySnackBar(
+                                        message: alreadyFollowing
+                                            ? "Unfollowed successfully"
+                                            : "Followed successfully",
+                                        icon: Icons.check_rounded,
+                                      );
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 18,
+                                      vertical: 9,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: followedUserIds.contains(user.id)
+                                          ? Colors.white
+                                          : const Color(0xFF5B2333),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: followedUserIds.contains(user.id)
+                                            ? const Color(0xFFE0E0E0)
+                                            : const Color(0xFF5B2333),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      followedUserIds.contains(user.id)
+                                          ? "Following"
+                                          : "Follow",
+                                      style: GoogleFonts.poppins(
+                                        color: followedUserIds.contains(user.id)
+                                            ? const Color(0xFF202124)
+                                            : Colors.white,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+  }
+
+  // Widget _buildDiscussionPlaceholder() {
+  //   return discussionLoading
+  //       ? const Center(child: CircularProgressIndicator())
+  //       : discussionPosts.isEmpty
+  //           ? Padding(
+  //               padding: const EdgeInsets.all(24),
+  //               child: Text(
+  //                 "No discussions yet",
+  //                 style: GoogleFonts.poppins(fontSize: 15),
+  //               ),
+  //             )
+  //           : ListView.separated(
+  //               shrinkWrap: true,
+  //               physics: const NeverScrollableScrollPhysics(),
+  //               padding: const EdgeInsets.only(bottom: 20),
+  //               itemCount: discussionPosts.length,
+  //               separatorBuilder: (_, __) => const SizedBox(height: 8),
+  //               itemBuilder: (context, index) {
+  //                 return PostCard(
+  //                   post: discussionPosts[index],
+  //                   currentUserId: widget.userId,
+  //                   currentUserName: widget.userName,
+  //                   onDelete: loadGroupData,
+  //                   onRefresh: loadGroupData,
+  //                 );
+  //               },
+  //             );
+  // }
+  Widget _buildDiscussionPlaceholder() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: GestureDetector(
+            onTap: () async {
+              final posted = await Navigator.push<bool>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => QuestionPostScreen(
+                    userId: widget.userId,
+                    userName: widget.userName,
+                    fixedGroup: group!,
+                  ),
+                ),
+              );
+
+              if (posted == true) {
+                await loadGroupData();
+              }
+            },
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE8E8E8)),
+                ),
+                child: Text(
+                  "Add Post +",
+                  style: GoogleFonts.poppins(
+                    color: Colors.black,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        discussionLoading
+            ? const Center(child: CircularProgressIndicator())
+            : discussionPosts.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      "No discussions yet",
+                      style: GoogleFonts.poppins(fontSize: 15),
+                    ),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.only(bottom: 20),
+                    itemCount: discussionPosts.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      return PostCard(
+                        post: discussionPosts[index],
+                        currentUserId: widget.userId,
+                        currentUserName: widget.userName,
+                        onDelete: loadGroupData,
+                        onRefresh: loadGroupData,
+                      );
+                    },
+                  ),
+      ],
     );
   }
 
