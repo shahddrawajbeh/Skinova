@@ -1,4 +1,3 @@
-
 import 'ingredient_model.dart';
 import 'review_model.dart';
 import 'whats_inside_model.dart';
@@ -10,7 +9,7 @@ class ProductModel {
   final String name;
   final String shortDescription;
   final String category;
-
+  final String directionsOfUse;
   final String imageUrl;
 
   final double rating;
@@ -37,6 +36,7 @@ class ProductModel {
     required this.brand,
     required this.name,
     required this.shortDescription,
+    required this.directionsOfUse,
     required this.imageUrl,
     required this.category,
     required this.rating,
@@ -60,6 +60,7 @@ class ProductModel {
       brand: json['brand'] ?? '',
       name: json['name'] ?? '',
       shortDescription: json['shortDescription'] ?? '',
+      directionsOfUse: json['directionsOfUse'] ?? '',
       imageUrl: json['imageUrl'] ?? '',
       rating: (json['rating'] ?? 0).toDouble(),
       reviews: (json['reviews'] as List<dynamic>? ?? [])
@@ -99,6 +100,7 @@ class ProductModel {
       'brand': brand,
       'name': name,
       'shortDescription': shortDescription,
+      'directionsOfUse': directionsOfUse,
       'category': category,
       'imageUrl': imageUrl,
       'rating': rating,

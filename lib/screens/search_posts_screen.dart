@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../api_service.dart';
 import 'post_page.dart';
+import 'group_type_results_screen.dart';
 
 class SearchPostsScreen extends StatefulWidget {
   final String userId;
@@ -22,7 +23,7 @@ class _SearchPostsScreenState extends State<SearchPostsScreen> {
   bool isLoading = true;
   String selectedType = "";
   String searchText = "";
-
+  int selectedTab = 0; // 0 = Posts, 1 = People
   @override
   void initState() {
     super.initState();
@@ -68,17 +69,80 @@ class _SearchPostsScreenState extends State<SearchPostsScreen> {
             _searchBar(),
             _tabs(),
             Expanded(
-              child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : searchText.isNotEmpty
-                      ? _postsList()
-                      : selectedType.isEmpty
-                          ? _categories()
-                          : _postsList(),
+              child: selectedTab == 1
+                  ? _peopleCategories()
+                  : isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : searchText.isNotEmpty
+                          ? _postsList()
+                          : selectedType.isEmpty
+                              ? _categories()
+                              : _postsList(),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _peopleCategories() {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+      children: [
+        _categoryCard(
+          title: "Skin types",
+          image: "assets/images/skint.jpg",
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => GroupTypeResultsScreen(
+                  title: "Search by skin type",
+                  groupType: "skin_type",
+                  userId: widget.userId,
+                  userName: widget.userName,
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        _categoryCard(
+          title: "Skin concerns",
+          image: "assets/images/skinc.jpeg",
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => GroupTypeResultsScreen(
+                  title: "Search by skin concern",
+                  groupType: "skin_types",
+                  userId: widget.userId,
+                  userName: widget.userName,
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        _categoryCard(
+          title: "Skin tones",
+          image: "assets/images/skintones.jpg",
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => GroupTypeResultsScreen(
+                  title: "Search by skin tone",
+                  groupType: "skin_tones",
+                  userId: widget.userId,
+                  userName: widget.userName,
+                ),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -155,9 +219,27 @@ class _SearchPostsScreenState extends State<SearchPostsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _tab("Posts", true),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                selectedTab = 0;
+                selectedType = "";
+                searchText = "";
+              });
+            },
+            child: _tab("Posts", selectedTab == 0),
+          ),
           const SizedBox(width: 44),
-          _tab("People", false),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                selectedTab = 1;
+                selectedType = "";
+                searchText = "";
+              });
+            },
+            child: _tab("People", selectedTab == 1),
+          ),
         ],
       ),
     );

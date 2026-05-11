@@ -6,15 +6,18 @@ import 'select_question_product_screen.dart';
 import 'select_group_type_screen.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import '../group_model.dart';
 
 class QuestionPostScreen extends StatefulWidget {
   final String userId;
   final String userName;
+  final GroupModel? fixedGroup;
 
   const QuestionPostScreen({
     super.key,
     required this.userId,
     required this.userName,
+    this.fixedGroup,
   });
 
   @override
@@ -104,28 +107,48 @@ class _QuestionPostScreenState extends State<QuestionPostScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 14),
             child: TextButton(
-              onPressed:
-                  canPost && (selectedProduct != null || selectedImage != null)
-                      ? () async {
-                          final posted = await Navigator.push<bool>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => SelectGroupTypeScreen(
-                                userId: widget.userId,
-                                userName: widget.userName,
-                                questionText: questionController.text.trim(),
-                                selectedProduct: selectedProduct,
-                                postType: "question",
-                                uploadedImageUrl: uploadedImageUrl,
-                              ),
-                            ),
-                          );
+              onPressed: canPost
+                  ? () async {
+                      if (widget.fixedGroup != null) {
+                        await ApiService.addQuestionPost(
+                          userId: widget.userId,
+                          userName: widget.userName,
+                          userAvatar: "",
+                          content: questionController.text.trim(),
+                          productId: selectedProduct?.id ?? "",
+                          productName: selectedProduct?.name ?? "",
+                          productImage: uploadedImageUrl.isNotEmpty
+                              ? uploadedImageUrl
+                              : selectedProduct?.imageUrl ?? "",
+                          groupId: widget.fixedGroup!.id,
+                          groupTitle: widget.fixedGroup!.title,
+                          groupSlug: widget.fixedGroup!.slug,
+                        );
 
-                          if (posted == true && mounted) {
-                            Navigator.pop(context, true);
-                          }
+                        if (mounted) {
+                          Navigator.pop(context, true);
                         }
-                      : null,
+                      } else {
+                        final posted = await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SelectGroupTypeScreen(
+                              userId: widget.userId,
+                              userName: widget.userName,
+                              questionText: questionController.text.trim(),
+                              selectedProduct: selectedProduct,
+                              postType: "question",
+                              uploadedImageUrl: uploadedImageUrl,
+                            ),
+                          ),
+                        );
+
+                        if (posted == true && mounted) {
+                          Navigator.pop(context, true);
+                        }
+                      }
+                    }
+                  : null,
               style: TextButton.styleFrom(
                 backgroundColor:
                     canPost ? const Color(0xFF5B2333) : const Color(0xFFF2F2F2),

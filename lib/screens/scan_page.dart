@@ -4,34 +4,34 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
+import '../api_service.dart';
+import '../product_model.dart';
+import 'product_details_screen.dart';
 
 class ScanPage extends StatefulWidget {
-  const ScanPage({super.key});
+  final String userId;
+  final String userName;
+
+  const ScanPage({
+    super.key,
+    required this.userId,
+    required this.userName,
+  });
 
   @override
   State<ScanPage> createState() => _ScanPageState();
 }
 
 class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
-  bool isBarcodeMode = false;
   bool isInitializing = true;
   bool isTorchOn = false;
   bool isTakingPhoto = false;
-  bool isShowingBarcodeResult = false;
-
+  bool isAnalyzing = false;
   CameraController? _cameraController;
   CameraDescription? _backCamera;
 
-  final MobileScannerController _barcodeController = MobileScannerController(
-    detectionSpeed: DetectionSpeed.noDuplicates,
-    facing: CameraFacing.back,
-    torchEnabled: false,
-  );
-
   final ImagePicker _picker = ImagePicker();
 
-  String? _lastBarcodeValue;
   File? _selectedGalleryImage;
   File? _capturedImage;
 
@@ -46,7 +46,6 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _cameraController?.dispose();
-    _barcodeController.dispose();
     super.dispose();
   }
 
@@ -57,8 +56,56 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
     if (state == AppLifecycleState.inactive) {
       await _cameraController?.dispose();
       _cameraController = null;
-    } else if (state == AppLifecycleState.resumed && !isBarcodeMode) {
+    } else if (state == AppLifecycleState.resumed) {
       await _initPhotoCamera();
+    }
+  }
+
+  Future<void> _analyzeProductImage(File imageFile) async {
+    try {
+      setState(() {
+        isAnalyzing = true;
+      });
+
+      final result = await ApiService.scanProductImage(
+        imageFile: imageFile,
+        userId: widget.userId,
+      );
+      if (!mounted) return;
+
+      final data = result["data"];
+
+      if (result["statusCode"] == 200 && data["matched"] == true) {
+        final product = ProductModel.fromJson(data["product"]);
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductDetailsScreen(
+              product: product,
+              userId: widget.userId,
+              userName: widget.userName,
+            ),
+          ),
+        );
+      } else {
+        _showNotFoundSheet(
+          data["message"] ??
+              "We couldn’t recognize this product. Try a clearer front photo.",
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Scan failed: $e")),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isAnalyzing = false;
+        });
+      }
     }
   }
 
@@ -95,6 +142,7 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
       });
     } catch (e) {
       if (!mounted) return;
+
       setState(() {
         isInitializing = false;
       });
@@ -105,47 +153,7 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _switchMode(bool barcodeMode) async {
-    if (isBarcodeMode == barcodeMode) return;
-
-    setState(() {
-      isInitializing = true;
-      isBarcodeMode = barcodeMode;
-      isTorchOn = false;
-      _lastBarcodeValue = null;
-    });
-
-    if (barcodeMode) {
-      await _cameraController?.dispose();
-      _cameraController = null;
-
-      try {
-        await _barcodeController.start();
-      } catch (_) {}
-
-      if (!mounted) return;
-      setState(() {
-        isInitializing = false;
-      });
-    } else {
-      try {
-        await _barcodeController.stop();
-      } catch (_) {}
-
-      await _initPhotoCamera();
-    }
-  }
-
   Future<void> _toggleTorch() async {
-    if (isBarcodeMode) {
-      await _barcodeController.toggleTorch();
-      if (!mounted) return;
-      setState(() {
-        isTorchOn = !isTorchOn;
-      });
-      return;
-    }
-
     final controller = _cameraController;
     if (controller == null || !controller.value.isInitialized) return;
 
@@ -157,6 +165,7 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
       }
 
       if (!mounted) return;
+
       setState(() {
         isTorchOn = !isTorchOn;
       });
@@ -168,9 +177,8 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
   }
 
   Future<void> _capturePhoto() async {
-    if (isBarcodeMode) return;
-
     final controller = _cameraController;
+
     if (controller == null ||
         !controller.value.isInitialized ||
         isTakingPhoto) {
@@ -191,44 +199,7 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
         _capturedImage = imageFile;
       });
 
-      await showDialog(
-        context: context,
-        barrierColor: Colors.black87,
-        builder: (_) {
-          return Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Stack(
-                children: [
-                  Image.file(
-                    imageFile,
-                    fit: BoxFit.contain,
-                  ),
-                  Positioned(
-                    top: 14,
-                    right: 14,
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.45),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.close, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
+      await _showImagePreview(imageFile);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Capture failed: $e')),
@@ -257,44 +228,7 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
         _selectedGalleryImage = file;
       });
 
-      await showDialog(
-        context: context,
-        barrierColor: Colors.black87,
-        builder: (_) {
-          return Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Stack(
-                children: [
-                  Image.file(
-                    file,
-                    fit: BoxFit.contain,
-                  ),
-                  Positioned(
-                    top: 14,
-                    right: 14,
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.45),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.close, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
+      await _showImagePreview(file);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Gallery error: $e')),
@@ -302,25 +236,82 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
     }
   }
 
-  void _onBarcodeDetect(BarcodeCapture capture) async {
-    if (!isBarcodeMode || isShowingBarcodeResult) return;
+  Future<void> _showImagePreview(File imageFile) async {
+    await showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 40,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Stack(
+              children: [
+                Image.file(
+                  imageFile,
+                  fit: BoxFit.contain,
+                ),
+                Positioned(
+                  top: 14,
+                  right: 14,
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.45),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 18,
+                  right: 18,
+                  bottom: 18,
+                  child: SizedBox(
+                    height: 52,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF5B2333),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _analyzeProductImage(imageFile);
+                      },
+                      child: Text(
+                        'Use this photo',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
-    final barcodes = capture.barcodes;
-    if (barcodes.isEmpty) return;
-
-    final value = barcodes.first.rawValue;
-    if (value == null || value.isEmpty) return;
-
-    isShowingBarcodeResult = true;
-    _lastBarcodeValue = value;
-
-    try {
-      await _barcodeController.stop();
-    } catch (_) {}
-
-    if (!mounted) return;
-
-    await showModalBottomSheet(
+  void _showNotFoundSheet(String message) {
+    showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFFFCFAF8),
       shape: const RoundedRectangleBorder(
@@ -328,7 +319,7 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
       ),
       builder: (_) {
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 30),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -341,39 +332,36 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
                 ),
               ),
               const SizedBox(height: 18),
+              const Icon(
+                Icons.search_off_rounded,
+                size: 48,
+                color: Color(0xFF5B2333),
+              ),
+              const SizedBox(height: 14),
               Text(
-                'Barcode detected',
+                "Product not found",
                 style: GoogleFonts.marcellus(
-                  fontSize: 24,
+                  fontSize: 22,
                   color: const Color(0xFF202124),
                 ),
               ),
-              const SizedBox(height: 14),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFE8E3DE)),
-                ),
-                child: Text(
-                  value,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: Color(0xFF202124),
-                    fontWeight: FontWeight.w600,
-                  ),
+              const SizedBox(height: 10),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.black54,
+                  height: 1.5,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
               SizedBox(
                 width: double.infinity,
-                height: 52,
+                height: 50,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF202124),
+                    backgroundColor: const Color(0xFF5B2333),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
@@ -382,34 +370,16 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
                     Navigator.pop(context);
                   },
                   child: const Text(
-                    'Done',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    "Try again",
+                    style: TextStyle(color: Colors.white, fontSize: 15),
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  try {
-                    await _barcodeController.start();
-                  } catch (_) {}
-                },
-                child: const Text('Scan again'),
               ),
             ],
           ),
         );
       },
     );
-
-    isShowingBarcodeResult = false;
-
-    if (mounted && isBarcodeMode) {
-      try {
-        await _barcodeController.start();
-      } catch (_) {}
-    }
   }
 
   Widget _buildPreview() {
@@ -419,14 +389,8 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
       );
     }
 
-    if (isBarcodeMode) {
-      return MobileScanner(
-        controller: _barcodeController,
-        onDetect: _onBarcodeDetect,
-      );
-    }
-
     final controller = _cameraController;
+
     if (controller == null || !controller.value.isInitialized) {
       return const Center(
         child: Text(
@@ -441,13 +405,13 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final bool photoMode = !isBarcodeMode;
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          Positioned.fill(child: _buildPreview()),
+          Positioned.fill(
+            child: _buildPreview(),
+          ),
           Positioned.fill(
             child: Container(
               color: Colors.black.withOpacity(0.18),
@@ -494,7 +458,7 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  'lumi',
+                  'skinova',
                   style: GoogleFonts.poppins(
                     color: Colors.white,
                     fontSize: 34,
@@ -504,9 +468,7 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  photoMode
-                      ? 'Take a photo of the front of the product'
-                      : 'Scan a barcode',
+                  'Take a clear photo of the front of the product',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     color: Colors.white.withOpacity(0.95),
@@ -520,16 +482,11 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
                     child: IgnorePointer(
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 250),
-                        width: photoMode
-                            ? MediaQuery.of(context).size.width - 44
-                            : 270,
-                        height: photoMode
-                            ? MediaQuery.of(context).size.height * 0.52
-                            : 108,
+                        width: MediaQuery.of(context).size.width - 44,
+                        height: MediaQuery.of(context).size.height * 0.52,
                         margin: const EdgeInsets.symmetric(horizontal: 22),
                         decoration: BoxDecoration(
-                          borderRadius:
-                              BorderRadius.circular(photoMode ? 28 : 24),
+                          borderRadius: BorderRadius.circular(28),
                           border: Border.all(
                             color: Colors.white.withOpacity(0.92),
                             width: 2,
@@ -541,9 +498,9 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
                 ),
                 const SizedBox(height: 20),
                 GestureDetector(
-                  onTap: photoMode ? _capturePhoto : null,
+                  onTap: _capturePhoto,
                   child: Opacity(
-                    opacity: photoMode ? 1 : 0.45,
+                    opacity: isTakingPhoto ? 0.45 : 1,
                     child: Container(
                       width: 86,
                       height: 86,
@@ -574,50 +531,21 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
                     children: [
                       _bottomSideButton(
                         icon: Icons.info_outline,
-                        onTap: () {
-                          showModalBottomSheet(
-                            context: context,
-                            backgroundColor: const Color(0xFFFCFAF8),
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(28),
-                              ),
-                            ),
-                            builder: (_) {
-                              return Padding(
-                                padding: const EdgeInsets.all(20),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      'How to scan',
-                                      style: GoogleFonts.marcellus(
-                                        fontSize: 24,
-                                        color: const Color(0xFF202124),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      photoMode
-                                          ? 'Center the product front inside the frame, hold still, then tap the shutter.'
-                                          : 'Place the barcode inside the small frame and wait until it is detected automatically.',
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        color: Colors.black54,
-                                        height: 1.5,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 18),
-                                  ],
-                                ),
-                              );
-                            },
-                          );
-                        },
+                        onTap: _showHowToScanSheet,
                       ),
                       const SizedBox(width: 14),
-                      Expanded(child: _modeSwitcher()),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            'Product photo scan',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
                       const SizedBox(width: 14),
                       _bottomSideButton(
                         icon: Icons.photo_library_outlined,
@@ -635,65 +563,43 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _modeSwitcher() {
-    return Container(
-      height: 58,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.14),
-        borderRadius: BorderRadius.circular(30),
+  void _showHowToScanSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFFFCFAF8),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(28),
+        ),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => _switchMode(false),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                margin: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: !isBarcodeMode ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(26),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'PHOTO',
-                  style: GoogleFonts.poppins(
-                    color:
-                        !isBarcodeMode ? const Color(0xFF2A2A2A) : Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3,
-                  ),
+      builder: (_) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'How to scan',
+                style: GoogleFonts.marcellus(
+                  fontSize: 24,
+                  color: const Color(0xFF202124),
                 ),
               ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => _switchMode(true),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                margin: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: isBarcodeMode ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(26),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'BARCODE',
-                  style: GoogleFonts.poppins(
-                    color:
-                        isBarcodeMode ? const Color(0xFF2A2A2A) : Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3,
-                  ),
+              const SizedBox(height: 12),
+              const Text(
+                'Center the product front inside the frame, make the label clear, hold still, then tap the shutter.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.black54,
+                  height: 1.5,
                 ),
               ),
-            ),
+              const SizedBox(height: 18),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

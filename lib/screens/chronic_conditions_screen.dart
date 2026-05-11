@@ -21,28 +21,16 @@ class _ChronicConditionsScreenState extends State<ChronicConditionsScreen> {
   final int currentStep = 8;
   final int totalSteps = 10;
 
-  String? selected;
+  //String? selected;
+  List<String> selectedConditions = [];
   final List<Map<String, dynamic>> options = [
-    {
-      "title": "Rosacea",
-      "icon": Icons.local_fire_department_outlined,
-    },
-    {
-      "title": "Eczema",
-      "icon": Icons.healing_outlined,
-    },
-    {
-      "title": "Psoriasis",
-      "icon": Icons.health_and_safety_outlined,
-    },
-    {
-      "title": "Atopic dermatitis",
-      "icon": Icons.spa_outlined,
-    },
-    {
-      "title": "None of these",
-      "icon": Icons.check_circle_outline_rounded,
-    },
+    {"title": "Acne", "icon": Icons.bubble_chart_outlined},
+    {"title": "Melasma", "icon": Icons.circle_outlined},
+    {"title": "Rosacea", "icon": Icons.local_fire_department_outlined},
+    {"title": "Eczema", "icon": Icons.healing_outlined},
+    {"title": "Psoriasis", "icon": Icons.health_and_safety_outlined},
+    {"title": "Contact dermatitis", "icon": Icons.warning_amber_rounded},
+    {"title": "None of these", "icon": Icons.check_circle_outline_rounded},
   ];
   Future<void> saveConditionAndContinue() async {
     final prefs = await SharedPreferences.getInstance();
@@ -56,7 +44,8 @@ class _ChronicConditionsScreenState extends State<ChronicConditionsScreen> {
     final result = await ApiService.saveOnboarding(
       userId: userId,
       data: {
-        "chronicCondition": selected,
+        "chronicCondition": selectedConditions.join(", "),
+        "specialConditions": selectedConditions,
       },
     );
 
@@ -225,12 +214,22 @@ class _ChronicConditionsScreenState extends State<ChronicConditionsScreen> {
                           final String title = item["title"]?.toString() ?? "";
                           final IconData icon = item["icon"] as IconData? ??
                               Icons.circle_outlined;
-                          final bool isSelected = selected == title;
-
+                          final bool isSelected =
+                              selectedConditions.contains(title);
                           return GestureDetector(
                             onTap: () {
                               setState(() {
-                                selected = title;
+                                if (title == "None of these") {
+                                  selectedConditions = ["None of these"];
+                                } else {
+                                  selectedConditions.remove("None of these");
+
+                                  if (selectedConditions.contains(title)) {
+                                    selectedConditions.remove(title);
+                                  } else {
+                                    selectedConditions.add(title);
+                                  }
+                                }
                               });
                             },
                             child: AnimatedContainer(
