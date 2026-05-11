@@ -10,6 +10,11 @@ import 'all_collections_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'settings_screen.dart';
 import 'package:share_plus/share_plus.dart';
+import 'scan_history_screen.dart';
+import 'post_page.dart';
+import 'post_details_screen.dart';
+import 'public_user_posts_screen.dart';
+import 'follow_list_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userId;
@@ -34,7 +39,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool isUploadingImage = false;
   UserModel? user;
   bool isLoading = true;
-
+  List<dynamic> recentScans = [];
+  bool isLoadingScans = true;
+  List<GroupPostModel> userPosts = [];
+  bool postsLoading = true;
   void showAllConcernsSheet() {
     final tags = _getSkinTags();
 
@@ -402,6 +410,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     loadProfile();
+    loadRecentScans();
+    loadUserPosts();
+  }
+
+  Future<void> loadUserPosts() async {
+    try {
+      final posts = await ApiService.fetchPosts();
+
+      if (!mounted) return;
+
+      setState(() {
+        userPosts =
+            posts.where((post) => post.userId == widget.userId).toList();
+        postsLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        postsLoading = false;
+      });
+    }
+  }
+
+  Future<void> loadRecentScans() async {
+    try {
+      final result = await ApiService.fetchScanHistory(widget.userId);
+
+      if (!mounted) return;
+
+      setState(() {
+        recentScans = result.take(4).toList();
+        isLoadingScans = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        isLoadingScans = false;
+      });
+    }
   }
 
   String getInitial(String name) {
@@ -463,7 +512,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return user!.favorites
         .map((product) => product.imageUrl)
         .where((image) => image.isNotEmpty)
-        .take(4)
+        // .take(4)
         .toList();
   }
 
@@ -564,11 +613,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               const SizedBox(height: 14),
                               _buildRecentlyUsedCard(),
+
                               const SizedBox(height: 22),
+
+                              _buildSectionHeader(
+                                title: 'Recent scans',
+                                actionText: 'View all',
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ScanHistoryScreen(
+                                        userId: widget.userId,
+                                        userName: user!.fullName,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 14),
+                              _buildRecentScansCard(),
+
+                              const SizedBox(height: 22),
+
                               _buildSectionHeader(
                                 title: 'Posts',
                                 actionText: 'View all',
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => PublicUserPostsScreen(
+                                        posts: userPosts,
+                                        currentUserId: widget.userId,
+                                        currentUserName: user!.fullName,
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
+                              const SizedBox(height: 14),
+                              _buildUserPostsSection(),
                               // const SizedBox(height: 14),
                               // _buildPostsRow(),
                             ],
@@ -577,6 +662,210 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ],
                   ),
+      ),
+    );
+  }
+
+  Widget _buildUserPostsSection() {
+    if (postsLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (userPosts.isEmpty) {
+      return _buildEmptyPostCard();
+    }
+
+    return SizedBox(
+      height: 220,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: userPosts.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 14),
+        itemBuilder: (context, index) {
+          final post = userPosts[index];
+          return _buildPublicPostCard(post);
+        },
+      ),
+    );
+  }
+
+  Widget _buildPublicPostCard(GroupPostModel post) {
+    final image =
+        post.images.isNotEmpty ? post.images.first : post.productImage;
+
+    return GestureDetector(
+      onTap: () async {
+        final updated = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PostDetailsScreen(
+              post: post,
+              currentUserId: widget.userId,
+              currentUserName: user!.fullName,
+            ),
+          ),
+        );
+
+        if (updated == true) {
+          loadUserPosts();
+        }
+      },
+      child: Container(
+        width: 210,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: const Color(0xFFF0F0F0),
+            width: 1.4,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              post.content.isNotEmpty ? post.content : "No caption",
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                height: 1.35,
+                color: textDark,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            const SizedBox(height: 14),
+            if (image.isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: Image.network(
+                  image,
+                  width: double.infinity,
+                  height: 95,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) {
+                    return _postImagePlaceholder();
+                  },
+                ),
+              )
+            else
+              _postImagePlaceholder(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _postImagePlaceholder() {
+    return Container(
+      width: double.infinity,
+      height: 95,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F7F6),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: const Icon(
+        Icons.image_outlined,
+        color: Colors.grey,
+        size: 32,
+      ),
+    );
+  }
+
+  Widget _buildRecentScansCard() {
+    if (isLoadingScans) {
+      return Container(
+        width: double.infinity,
+        height: 108,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F7F6),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (recentScans.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F7F6),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Text(
+          'No scans yet',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: textDark,
+          ),
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ScanHistoryScreen(
+              userId: widget.userId,
+              userName: user!.fullName,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F7F6),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: recentScans.map((scan) {
+              final matched = scan["matched"] == true;
+              final product = scan["productId"];
+
+              final imageUrl =
+                  matched && product != null ? product["imageUrl"] ?? "" : "";
+
+              return Container(
+                width: 84,
+                height: 84,
+                margin: const EdgeInsets.only(right: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                padding: const EdgeInsets.all(8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: imageUrl.isNotEmpty
+                      ? Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              const Icon(Icons.image_not_supported_outlined),
+                        )
+                      : const Icon(
+                          Icons.search_off_rounded,
+                          color: Color(0xFF5B2333),
+                        ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
       ),
     );
   }
@@ -724,25 +1013,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Text(
-                          '0 Followers',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: textDark,
+                        GestureDetector(
+                          onTap: () async {
+                            final updated = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => FollowListScreen(
+                                        title: "Followers",
+                                        profileUserId: widget.userId,
+                                        currentUserId: widget.userId,
+                                      )),
+                            );
+
+                            if (updated == true) {
+                              await loadProfile();
+                            }
+                          },
+                          child: Text(
+                            '${user!.followers.length} Followers',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: textDark,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 14),
-                        Text(
-                          '1 Following',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: textDark,
+                        GestureDetector(
+                          onTap: () async {
+                            final updated = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => FollowListScreen(
+                                        title: "Following",
+                                        profileUserId: widget.userId,
+                                        currentUserId: widget.userId,
+                                      )),
+                            );
+
+                            if (updated == true) {
+                              await loadProfile();
+                            }
+                          },
+                          child: Text(
+                            '${user!.following.length} Following',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: textDark,
+                            ),
                           ),
                         ),
                       ],
-                    ),
+                    )
+                    // Row(
+                    //   children: [
+                    //     Text(
+                    //       '${user!.followers.length} Followers',
+                    //       style: GoogleFonts.poppins(
+                    //         fontSize: 14,
+                    //         fontWeight: FontWeight.w500,
+                    //         color: textDark,
+                    //       ),
+                    //     ),
+                    //     const SizedBox(width: 14),
+                    //     Text(
+                    //       '${user!.following.length} Following',
+                    //       style: GoogleFonts.poppins(
+                    //         fontSize: 14,
+                    //         fontWeight: FontWeight.w500,
+                    //         color: textDark,
+                    //       ),
+                    //     ),
+                    //   ],
+                    // ),
                   ],
                 ),
               ),

@@ -87,7 +87,8 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              //  onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(context, true),
               child: const Text("Cancel"),
             ),
             TextButton(
@@ -142,7 +143,8 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(context, true),
+              //onPressed: () => Navigator.pop(context),
               child: const Text("Cancel"),
             ),
             TextButton(
@@ -345,7 +347,8 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
         elevation: 0,
         surfaceTintColor: Colors.white,
         leading: IconButton(
-          onPressed: () => Navigator.pop(context),
+          //onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, true),
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
             color: Colors.black,

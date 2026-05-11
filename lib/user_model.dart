@@ -48,6 +48,8 @@ class UserModel {
   final String? profileImage;
   final List<UserCollectionModel> collections;
   final List<FavoriteProductModel> favorites;
+  final List<FollowUserModel> followers;
+  final List<FollowUserModel> following;
 
   UserModel({
     required this.id,
@@ -58,6 +60,8 @@ class UserModel {
     this.profileImage,
     required this.collections,
     this.favorites = const [],
+    required this.followers,
+    required this.following,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -76,6 +80,12 @@ class UserModel {
               ?.map((e) => FavoriteProductModel.fromJson(e))
               .toList() ??
           [],
+      followers: (json['followers'] as List? ?? [])
+          .map((e) => FollowUserModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
+      following: (json['following'] as List? ?? [])
+          .map((e) => FollowUserModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
     );
   }
 }
@@ -128,6 +138,26 @@ class FavoriteProductModel {
       imageUrl: json['imageUrl'] ?? '',
       //category: json['category'] ?? '',
       rating: (json['rating'] ?? 0).toDouble(),
+    );
+  }
+}
+
+class FollowUserModel {
+  final String id;
+  final String fullName;
+  final String profileImage;
+
+  FollowUserModel({
+    required this.id,
+    required this.fullName,
+    required this.profileImage,
+  });
+
+  factory FollowUserModel.fromJson(Map<String, dynamic> json) {
+    return FollowUserModel(
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      fullName: json['fullName'] ?? '',
+      profileImage: json['profileImage'] ?? '',
     );
   }
 }
