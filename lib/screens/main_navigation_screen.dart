@@ -3,7 +3,7 @@ import 'home_screen.dart';
 import 'skinova_products_screen.dart';
 import 'profile_screen.dart';
 import 'package:skinnova/screens/post_page.dart';
-
+import 'ai_skin_scan_page.dart';
 class MainNavigationScreen extends StatefulWidget {
   final String userId;
   final String userName;
@@ -27,7 +27,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           userId: widget.userId,
           userName: widget.userName,
         ),
-        const _PlaceholderPage(title: "Scan"),
+        const AiSkinScanPage(),
         SkinovaProductsScreen(userId: widget.userId, userName: widget.userName),
         ProfileScreen(userId: widget.userId),
       ];
