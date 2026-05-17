@@ -225,72 +225,72 @@ class _SearchPageState extends State<SearchPage> {
     loadUserAndFavorites();
   }
 
-  Future<void> addProductToCart(ProductModel product) async {
-    if (currentUserId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please log in first")),
-      );
-      return;
-    }
+  // Future<void> addProductToCart(ProductModel product) async {
+  //   if (currentUserId == null) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(content: Text("Please log in first")),
+  //     );
+  //     return;
+  //   }
 
-    try {
-      final result = await ApiService.addToCart(
-        userId: currentUserId!,
-        productId: product.id,
-        quantity: 1,
-      );
+  //   try {
+  //     final result = await ApiService.addToCart(
+  //       userId: currentUserId!,
+  //       productId: product.id,
+  //       quantity: 1,
+  //     );
 
-      if (result["statusCode"] == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: const Color(0xFF663F44),
-            elevation: 0,
-            margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
-            duration: const Duration(seconds: 2),
-            content: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: const BoxDecoration(
-                    color: Colors.white24,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    "Product added to cart",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to add product to cart")),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
-    }
-  }
+  //     if (result["statusCode"] == 200) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           behavior: SnackBarBehavior.floating,
+  //           backgroundColor: const Color(0xFF663F44),
+  //           elevation: 0,
+  //           margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+  //           shape: RoundedRectangleBorder(
+  //             borderRadius: BorderRadius.circular(18),
+  //           ),
+  //           duration: const Duration(seconds: 2),
+  //           content: Row(
+  //             children: [
+  //               Container(
+  //                 padding: const EdgeInsets.all(6),
+  //                 decoration: const BoxDecoration(
+  //                   color: Colors.white24,
+  //                   shape: BoxShape.circle,
+  //                 ),
+  //                 child: const Icon(
+  //                   Icons.check,
+  //                   color: Colors.white,
+  //                   size: 16,
+  //                 ),
+  //               ),
+  //               const SizedBox(width: 12),
+  //               const Expanded(
+  //                 child: Text(
+  //                   "Product added to cart",
+  //                   style: TextStyle(
+  //                     color: Colors.white,
+  //                     fontSize: 14,
+  //                     fontWeight: FontWeight.w600,
+  //                   ),
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       );
+  //     } else {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         const SnackBar(content: Text("Failed to add product to cart")),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text("Error: $e")),
+  //     );
+  //   }
+  // }
 
   Future<void> loadProducts() async {
     try {
@@ -781,28 +781,6 @@ class _SearchPageState extends State<SearchPage> {
                           ),
                         ),
                         const Spacer(),
-                        GestureDetector(
-                          onTap: () {
-                            addProductToCart(product);
-                          },
-                          child: Container(
-                            height: 34,
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                            decoration: BoxDecoration(
-                              color: deepRose,
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              "Add to cart",
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ],

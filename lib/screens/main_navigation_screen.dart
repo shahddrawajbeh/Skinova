@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:skinnova/screens/tracker_page.dart';
 import 'home_screen.dart';
 import 'skinova_products_screen.dart';
 import 'profile_screen.dart';
 import 'package:skinnova/screens/post_page.dart';
+import 'skinova_ai_scan_flow.dart';
+import 'tracker_page.dart';
+import 'shop_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   final String userId;
@@ -27,19 +31,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           userId: widget.userId,
           userName: widget.userName,
         ),
-        const _PlaceholderPage(title: "Scan"),
-        SkinovaProductsScreen(userId: widget.userId, userName: widget.userName),
+        const TrackerPage(),
+        ShopScreen(
+          userId: widget.userId,
+          userName: widget.userName,
+        ),
+        SkinovaProductsScreen(
+          userId: widget.userId,
+          userName: widget.userName,
+        ),
         ProfileScreen(userId: widget.userId),
       ];
-
   final List<IconData> navIcons = const [
     Icons.home_outlined,
     Icons.article_outlined,
     Icons.qr_code_scanner_rounded,
-    Icons.shopping_bag_outlined,
+    Icons.storefront_rounded,
+    Icons.medical_services_outlined,
     Icons.person_outline_rounded,
   ];
-
   void _onTap(int index) {
     setState(() => selectedIndex = index);
   }
@@ -84,18 +94,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       children: [
                         Icon(
                           navIcons[index],
-                          size: 18,
+                          size: 22,
                           color: isSelected ? wine : Colors.black87,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _navLabel(index),
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight:
-                                isSelected ? FontWeight.w600 : FontWeight.w500,
-                            color: isSelected ? wine : Colors.black87,
-                          ),
                         ),
                       ],
                     ),
@@ -119,8 +119,10 @@ String _navLabel(int index) {
     case 2:
       return 'Scan';
     case 3:
-      return 'Products';
+      return 'Shop';
     case 4:
+      return 'Products';
+    case 5:
       return 'Profile';
     default:
       return '';

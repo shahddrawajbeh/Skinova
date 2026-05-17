@@ -4,6 +4,8 @@ import '../product_model.dart';
 import '../api_service.dart';
 import '../review_model.dart';
 import 'post_page.dart';
+import 'store_details_screen.dart';
+import 'buy_product_from_store_screen.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   final ProductModel product;
@@ -42,6 +44,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   bool collectionsLoading = false;
   String? selectedCollectionId;
   bool isSavedToCollection = false;
+  List<dynamic> productStores = [];
+  bool storesLoading = true;
   @override
   void initState() {
     super.initState();
@@ -53,6 +57,33 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     _loadProductReviewPosts();
     _loadSameBrandProducts();
     loadSavedState();
+    _loadProductStores();
+  }
+
+  Future<void> _loadProductStores() async {
+    try {
+      debugPrint("OPENED PRODUCT ID = ${widget.product.id}");
+
+      final stores = await ApiService.fetchStoresForProduct(widget.product.id);
+
+      debugPrint("STORES RESULT = $stores");
+      debugPrint("STORES COUNT = ${stores.length}");
+
+      if (!mounted) return;
+
+      setState(() {
+        productStores = stores;
+        storesLoading = false;
+      });
+    } catch (e) {
+      debugPrint("Load product stores error: $e");
+
+      if (!mounted) return;
+
+      setState(() {
+        storesLoading = false;
+      });
+    }
   }
 
   Future<void> _openAddToCollectionSheet() async {
@@ -108,6 +139,309 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     } catch (e) {
       debugPrint("Load collections error: $e");
     }
+  }
+
+  Widget _availableStoresSection() {
+    if (storesLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (productStores.isEmpty) {
+      return Text(
+        "No stores selling this product yet.",
+        style: GoogleFonts.poppins(fontSize: 13, color: Colors.black54),
+      );
+    }
+
+    final names = productStores.map((item) {
+      final store = item["storeId"] ?? {};
+      return store["storeName"] ?? "Store";
+    }).toList();
+
+    final shownNames = names.take(2).join(", ");
+    final moreCount = names.length - 2;
+
+    return GestureDetector(
+      onTap: _showStoresBottomSheet,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF3F3F3),
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Where to buy",
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: darkText,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    moreCount > 0
+                        ? "$shownNames, +$moreCount more"
+                        : shownNames,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.black54,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 96,
+              height: 46,
+              child: Stack(
+                children: List.generate(
+                  productStores.length > 3 ? 3 : productStores.length,
+                  (index) {
+                    final store = productStores[index]["storeId"] ?? {};
+                    final storeName = store["storeName"] ?? "S";
+                    final firstLetter =
+                        storeName.isNotEmpty ? storeName[0].toUpperCase() : "S";
+
+                    final logoUrl = store["logoUrl"] ?? "";
+
+                    return Positioned(
+                      left: index * 28,
+                      child: CircleAvatar(
+                        radius: 23,
+                        backgroundColor: Colors.white,
+                        child: ClipOval(
+                          child: logoUrl.isNotEmpty
+                              ? logoUrl.startsWith("assets/")
+                                  ? Image.asset(
+                                      logoUrl,
+                                      width: 46,
+                                      height: 46,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Image.network(
+                                      logoUrl,
+                                      width: 46,
+                                      height: 46,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Text(
+                                        firstLetter,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700,
+                                          color: wine,
+                                        ),
+                                      ),
+                                    )
+                              : Text(
+                                  firstLetter,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: wine,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showStoresBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.62,
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(34)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    "Where to buy",
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                      color: darkText,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 46,
+                      height: 46,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF4F4F4),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close_rounded, size: 26),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: productStores.length,
+                  separatorBuilder: (_, __) => Divider(
+                    height: 30,
+                    color: Colors.grey.shade200,
+                  ),
+                  itemBuilder: (context, index) {
+                    final item = productStores[index];
+                    final store = item["storeId"] ?? {};
+
+                    final storeName = store["storeName"] ?? "Unknown Store";
+                    final logoUrl = store["logoUrl"] ?? "";
+                    final price = item["price"] ?? 0;
+                    final currency = item["currency"] ?? "ILS";
+                    final stockCount = item["stockCount"] ?? 0;
+
+                    final firstLetter =
+                        storeName.isNotEmpty ? storeName[0].toUpperCase() : "S";
+
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BuyProductFromStoreScreen(
+                              product: widget.product,
+                              storeProduct: Map<String, dynamic>.from(item),
+                              userId: widget.userId,
+                              userName: widget.userName,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 30,
+                            backgroundColor: const Color(0xFFF4F4F4),
+                            child: ClipOval(
+                              child: logoUrl.isNotEmpty
+                                  ? logoUrl.startsWith("assets/")
+                                      ? Image.asset(
+                                          logoUrl,
+                                          width: 60,
+                                          height: 60,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Image.network(
+                                          logoUrl,
+                                          width: 60,
+                                          height: 60,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => Text(
+                                            firstLetter,
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.w700,
+                                              color: wine,
+                                            ),
+                                          ),
+                                        )
+                                  : Text(
+                                      firstLetter,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w700,
+                                        color: wine,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(width: 18),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  storeName,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: darkText,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "$stockCount in stock",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 11,
+                                    color: Colors.black45,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 11,
+                            ),
+                            decoration: BoxDecoration(
+                              color: index == 0
+                                  ? const Color(0xFFFFD84D)
+                                  : const Color(0xFFF5F5F5),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              "$price $currency",
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: darkText,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                "Prices from stores may change.",
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: Colors.black45,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _collectionSheet() {
@@ -640,39 +974,39 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     }
   }
 
-  Future<void> _addToCart() async {
-    if (isCartLoading) return;
+  // Future<void> _addToCart() async {
+  //   if (isCartLoading) return;
 
-    setState(() {
-      isCartLoading = true;
-    });
+  //   setState(() {
+  //     isCartLoading = true;
+  //   });
 
-    try {
-      await ApiService.addToCart(
-        userId: widget.userId,
-        productId: widget.product.id,
-        quantity: 1,
-      );
+  //   try {
+  //     await ApiService.addToCart(
+  //       userId: widget.userId,
+  //       productId: widget.product.id,
+  //       quantity: 1,
+  //     );
 
-      if (!mounted) return;
+  //     if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Added to cart")),
-      );
-    } catch (e) {
-      if (!mounted) return;
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(content: Text("Added to cart")),
+  //     );
+  //   } catch (e) {
+  //     if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to add to cart")),
-      );
-    } finally {
-      if (!mounted) return;
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(content: Text("Failed to add to cart")),
+  //     );
+  //   } finally {
+  //     if (!mounted) return;
 
-      setState(() {
-        isCartLoading = false;
-      });
-    }
-  }
+  //     setState(() {
+  //       isCartLoading = false;
+  //     });
+  //   }
+  // }
 
   Future<void> _openReviewSheet() async {
     int currentStep = 1;
@@ -959,83 +1293,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        bottomNavigationBar: SafeArea(
-          minimum: const EdgeInsets.fromLTRB(20, 8, 20, 18),
-          child: Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: whiteSmoke,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: IconButton(
-                  onPressed: isFavoriteLoading ? null : _toggleFavorite,
-                  icon: isFavoriteLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Icon(
-                          isFavorite
-                              ? Icons.favorite
-                              : Icons.favorite_border_rounded,
-                          color: wine,
-                          size: 25,
-                        ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SizedBox(
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed:
-                        product.inStock && !isCartLoading ? _addToCart : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: wine,
-                      disabledBackgroundColor: wine.withOpacity(0.35),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                    ),
-                    child: isCartLoading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.shopping_bag_outlined,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                product.inStock ? "Add to Cart" : "Unavailable",
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
         body: DefaultTabController(
           length: 4,
           child: SafeArea(
@@ -1117,6 +1374,34 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                   ),
                                 ),
                               ),
+                              Container(
+                                width: 52,
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF4F4F4),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: IconButton(
+                                  onPressed: isFavoriteLoading
+                                      ? null
+                                      : _toggleFavorite,
+                                  icon: isFavoriteLoading
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2),
+                                        )
+                                      : Icon(
+                                          isFavorite
+                                              ? Icons.favorite
+                                              : Icons.favorite_border_rounded,
+                                          color: wine,
+                                          size: 28,
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
                               GestureDetector(
                                 onTap: () => _openAddToCollectionSheet(),
                                 child: Container(
@@ -1283,6 +1568,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           const SizedBox(height: 12),
           _simpleInfoLine("Brand Origin", product.brandOrigin),
           _simpleInfoLine("Size", product.size),
+          const SizedBox(height: 30),
+          _availableStoresSection(),
           const SizedBox(height: 30),
           _sameBrandSection(),
         ],

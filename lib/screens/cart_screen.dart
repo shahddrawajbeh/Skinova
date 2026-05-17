@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../api_service.dart';
 import 'checkout_screen.dart';
+import 'rate_stores_screen.dart';
 
 class CartScreen extends StatefulWidget {
   final String userId;
@@ -18,11 +19,11 @@ class CartScreen extends StatefulWidget {
 class _CartScreenState extends State<CartScreen> {
   static const Color bgColor = Color(0xFFF7F7F7);
   static const Color cardColor = Color(0xFFFFFFFF);
-  static const Color softRose = Color(0xFFCCBDB9);
-  static const Color deepRose = Color(0xFF663F44);
-  static const Color darkRose = Color(0xFF663F44);
+  static const Color softRose = Color(0xFF111111);
+  static const Color deepRose = Color(0xFF5B2333);
+  static const Color darkRose = Color(0xFF5B2333);
   static const Color textDark = Color(0xFF111111);
-  static const Color lineColor = Color(0xFFF1ECEA);
+  static const Color lineColor = Color(0xFFF7F4F3);
 
   bool isLoading = true;
   String? errorMessage;
@@ -63,52 +64,53 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
-  Future<void> addQuantity(String productId) async {
-    try {
-      await ApiService.addToCart(
-        userId: widget.userId,
-        productId: productId,
-        quantity: 1,
-      );
-      await loadCart();
-    } catch (e) {
-      _showPrettySnackBar("Couldn't update quantity");
-    }
+  Future<void> addQuantity(
+    String productId,
+    String storeId,
+    dynamic price,
+    String currency,
+  ) async {
+    await ApiService.addToCart(
+      userId: widget.userId,
+      productId: productId,
+      storeId: storeId,
+      quantity: 1,
+      price: price,
+      currency: currency,
+    );
+    await loadCart();
   }
 
-  Future<void> decreaseQuantity(String productId, int currentQuantity) async {
+  Future<void> decreaseQuantity(
+    String productId,
+    String storeId,
+    int currentQuantity,
+  ) async {
     if (currentQuantity <= 1) {
-      await removeItem(productId);
+      await removeItem(productId, storeId);
       return;
     }
 
-    try {
-      await ApiService.updateCartQuantity(
-        userId: widget.userId,
-        productId: productId,
-        quantity: currentQuantity - 1,
-      );
-      await loadCart();
-    } catch (e) {
-      _showPrettySnackBar("Couldn't update quantity");
-    }
+    await ApiService.updateCartQuantity(
+      userId: widget.userId,
+      productId: productId,
+      storeId: storeId,
+      quantity: currentQuantity - 1,
+    );
+
+    await loadCart();
   }
 
-  Future<void> removeItem(String productId) async {
-    try {
-      final result = await ApiService.removeFromCart(
-        userId: widget.userId,
-        productId: productId,
-      );
+  Future<void> removeItem(String productId, String storeId) async {
+    final result = await ApiService.removeFromCart(
+      userId: widget.userId,
+      productId: productId,
+      storeId: storeId,
+    );
 
-      if (result["statusCode"] == 200) {
-        await loadCart();
-        _showPrettySnackBar("Removed from cart");
-      } else {
-        _showPrettySnackBar("Failed to remove item");
-      }
-    } catch (e) {
-      _showPrettySnackBar("Error removing item");
+    if (result["statusCode"] == 200) {
+      await loadCart();
+      _showPrettySnackBar("Removed from cart");
     }
   }
 
@@ -154,7 +156,7 @@ class _CartScreenState extends State<CartScreen> {
     for (final item in cartItems) {
       final product = item["productId"];
       if (product != null) {
-        final price = (product["price"] ?? 0).toDouble();
+        final price = (item["price"] ?? product["price"] ?? 0).toDouble();
         final quantity = item["quantity"] ?? 1;
         total += price * quantity;
       }
@@ -198,7 +200,7 @@ class _CartScreenState extends State<CartScreen> {
                   Expanded(
                     child: Text(
                       "My Cart",
-                      style: GoogleFonts.marcellus(
+                      style: GoogleFonts.poppins(
                         fontSize: 28,
                         color: darkRose,
                       ),
@@ -246,6 +248,9 @@ class _CartScreenState extends State<CartScreen> {
                                       return _cartItemCard(
                                         product: product,
                                         quantity: item["quantity"] ?? 1,
+                                        store: item["storeId"],
+                                        itemPrice: item["price"],
+                                        itemCurrency: item["currency"],
                                       );
                                     },
                                   ),
@@ -284,7 +289,7 @@ class _CartScreenState extends State<CartScreen> {
             "Your cart is empty",
             style: GoogleFonts.poppins(
               fontSize: 20,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               color: darkRose,
             ),
           ),
@@ -306,13 +311,18 @@ class _CartScreenState extends State<CartScreen> {
   Widget _cartItemCard({
     required dynamic product,
     required int quantity,
+    dynamic store,
+    dynamic itemPrice,
+    String? itemCurrency,
   }) {
     final String productId = product["_id"] ?? "";
     final String name = product["name"] ?? "Unknown product";
     final String brand = product["brand"] ?? "";
     final String imageUrl = product["imageUrl"] ?? "";
-    final double price = (product["price"] ?? 0).toDouble();
-
+    final double price = (itemPrice ?? product["price"] ?? 0).toDouble();
+    final String currency = itemCurrency ?? product["currency"] ?? "ILS";
+    final String storeId = store?["_id"]?.toString() ?? "";
+    final String storeName = store?["storeName"]?.toString() ?? "";
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -357,7 +367,7 @@ class _CartScreenState extends State<CartScreen> {
           const SizedBox(width: 14),
           Expanded(
             child: SizedBox(
-              height: 92,
+              height: 110,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -367,7 +377,7 @@ class _CartScreenState extends State<CartScreen> {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
                       fontSize: 15.5,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       color: textDark,
                       height: 1.25,
                     ),
@@ -381,9 +391,18 @@ class _CartScreenState extends State<CartScreen> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+                  if (storeName.isNotEmpty)
+                    Text(
+                      "From $storeName",
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: softRose,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   const Spacer(),
                   Text(
-                    "\$${price.toStringAsFixed(2)}",
+                    "${price.toStringAsFixed(2)} $currency",
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -401,7 +420,7 @@ class _CartScreenState extends State<CartScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 GestureDetector(
-                  onTap: () => removeItem(productId),
+                  onTap: () => removeItem(productId, storeId),
                   child: Container(
                     width: 34,
                     height: 34,
@@ -430,7 +449,8 @@ class _CartScreenState extends State<CartScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       GestureDetector(
-                        onTap: () => decreaseQuantity(productId, quantity),
+                        onTap: () =>
+                            decreaseQuantity(productId, storeId, quantity),
                         child: const Icon(
                           Icons.remove,
                           size: 17,
@@ -443,13 +463,14 @@ class _CartScreenState extends State<CartScreen> {
                           quantity.toString(),
                           style: GoogleFonts.poppins(
                             fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                             color: textDark,
                           ),
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => addQuantity(productId),
+                        onTap: () =>
+                            addQuantity(productId, storeId, price, currency),
                         child: const Icon(
                           Icons.add,
                           size: 17,
@@ -508,8 +529,18 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                 );
 
-                if (result == true) {
-                  await loadCart(); // 🔥 تحديث السلة بعد الطلب
+                if (result != null && result is List) {
+                  await loadCart();
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => RateStoresScreen(
+                        userId: widget.userId,
+                        orders: result,
+                      ),
+                    ),
+                  );
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -524,7 +555,7 @@ class _CartScreenState extends State<CartScreen> {
                 "Proceed to Checkout",
                 style: GoogleFonts.poppins(
                   fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),

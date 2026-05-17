@@ -9,9 +9,10 @@ import 'screens/post_page.dart';
 import 'app_user_model.dart';
 import '../active_ingredient_model.dart';
 import '../medication_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = "http://192.168.1.15:5000";
+  static const String baseUrl = "http://192.168.1.12:5000";
   static Future<String?> uploadProfileImage({
     required String userId,
     required File imageFile,
@@ -193,10 +194,13 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> addToCart({
+  static Future<dynamic> addToCart({
     required String userId,
     required String productId,
-    int quantity = 1,
+    required int quantity,
+    required String storeId,
+    required dynamic price,
+    required String currency,
   }) async {
     final response = await http.post(
       Uri.parse("$baseUrl/api/cart/add"),
@@ -204,7 +208,10 @@ class ApiService {
       body: jsonEncode({
         "userId": userId,
         "productId": productId,
+        "storeId": storeId,
         "quantity": quantity,
+        "price": price,
+        "currency": currency,
       }),
     );
 
@@ -226,9 +233,10 @@ class ApiService {
     };
   }
 
-  static Future<Map<String, dynamic>> removeFromCart({
+  static Future<dynamic> removeFromCart({
     required String userId,
     required String productId,
+    required String storeId,
   }) async {
     final response = await http.delete(
       Uri.parse("$baseUrl/api/cart/remove"),
@@ -236,6 +244,7 @@ class ApiService {
       body: jsonEncode({
         "userId": userId,
         "productId": productId,
+        "storeId": storeId,
       }),
     );
 
@@ -245,9 +254,10 @@ class ApiService {
     };
   }
 
-  static Future<Map<String, dynamic>> updateCartQuantity({
+  static Future<dynamic> updateCartQuantity({
     required String userId,
     required String productId,
+    required String storeId,
     required int quantity,
   }) async {
     final response = await http.put(
@@ -256,6 +266,7 @@ class ApiService {
       body: jsonEncode({
         "userId": userId,
         "productId": productId,
+        "storeId": storeId,
         "quantity": quantity,
       }),
     );
@@ -1220,5 +1231,194 @@ class ApiService {
       print("UNFOLLOW USER ERROR: $e");
       return false;
     }
+  }
+
+  static Future<List<dynamic>> fetchStoresForProduct(String productId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/store-products/product/$productId'),
+    );
+
+    print("STORES STATUS = ${response.statusCode}");
+    print("STORES BODY = ${response.body}");
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load stores for product');
+    }
+  }
+
+  static Future<List<dynamic>> fetchProductsByStore(String storeId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/store-products/store/$storeId'),
+    );
+
+    print("STORE PRODUCTS STATUS = ${response.statusCode}");
+    print("STORE PRODUCTS BODY = ${response.body}");
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load store products');
+    }
+  }
+
+  static Future<List<dynamic>> fetchStores() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/stores'),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load stores');
+    }
+  }
+
+  static Future<List<dynamic>> fetchAllStoreProducts() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/store-products'),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load store products');
+    }
+  }
+
+  static Future<List<dynamic>> fetchApprovedAds() async {
+    final response = await http.get(Uri.parse("$baseUrl/api/ads/approved"));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Failed to load ads");
+    }
+  }
+
+  static Future<List<dynamic>> fetchTrendingStoreProducts() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/store-products/trending'),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load trending products');
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchMySellerStore() async {
+    final prefs = await SharedPreferences.getInstance();
+    final sellerId = prefs.getString("userId");
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/stores/seller/$sellerId"),
+    );
+
+    print("SELLER STORE STATUS = ${response.statusCode}");
+    print("SELLER STORE BODY = ${response.body}");
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Failed to load seller store");
+    }
+  }
+
+  static Future<Map<String, dynamic>> addStoreProduct({
+    required String productId,
+    required double price,
+    required int stockCount,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final sellerId = prefs.getString("userId");
+    final store = await fetchMySellerStore();
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/store-products"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "storeId": store["_id"],
+        "productId": productId,
+        "sellerId": sellerId,
+        "price": price,
+        "currency": "ILS",
+        "stockCount": stockCount,
+      }),
+    );
+
+    return {
+      "statusCode": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
+  }
+
+  static Future<Map<String, dynamic>> createAdOffer({
+    required String title,
+    required String subtitle,
+    required String imageUrl,
+    required String buttonText,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final sellerId = prefs.getString("userId");
+    final store = await fetchMySellerStore();
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/ads"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "storeId": store["_id"],
+        "sellerId": sellerId,
+        "title": title,
+        "subtitle": subtitle,
+        "imageUrl": imageUrl,
+        "buttonText": buttonText,
+      }),
+    );
+
+    return {
+      "statusCode": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
+  }
+
+  static Future<List<dynamic>> fetchSellerAds() async {
+    final prefs = await SharedPreferences.getInstance();
+    final sellerId = prefs.getString("userId");
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/ads/seller/$sellerId"),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Failed to load seller ads");
+    }
+  }
+
+  static Future<Map<String, dynamic>> rateStoreForOrder({
+    required String orderId,
+    required String userId,
+    required double rating,
+    required String comment,
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/orders/$orderId/rate-store"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "userId": userId,
+        "rating": rating,
+        "comment": comment,
+      }),
+    );
+
+    return {
+      "statusCode": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
   }
 }

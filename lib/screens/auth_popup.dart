@@ -8,6 +8,7 @@ import 'main_navigation_screen.dart';
 import '../api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'admin_home_screen.dart';
+import 'seller_home_screen.dart';
 
 class AuthPopup extends StatefulWidget {
   const AuthPopup({super.key});
@@ -115,6 +116,13 @@ class _AuthPopupState extends State<AuthPopup> {
             context,
             MaterialPageRoute(
               builder: (_) => const AdminHomeScreen(),
+            ),
+          );
+        } else if (role == "saller") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const SellerHomeScreen(),
             ),
           );
         } else {
