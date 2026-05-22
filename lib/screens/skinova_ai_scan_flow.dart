@@ -293,34 +293,6 @@ class _ScanningPageState extends State<ScanningPage>
 
     _sendImageToBackend();
   }
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _controller = AnimationController(
-  //     vsync: this,
-  //     duration: const Duration(milliseconds: 1700),
-  //   )..repeat();
-
-  //   Future.doWhile(() async {
-  //     await Future.delayed(const Duration(milliseconds: 900));
-  //     if (!mounted) return false;
-  //     setState(() => _messageIndex = (_messageIndex + 1) % _messages.length);
-  //     return true;
-  //   });
-
-  //   Future.delayed(const Duration(seconds: 4), () {
-  //     if (!mounted) return;
-  //     Navigator.pushReplacement(
-  //       context,
-  //       MaterialPageRoute(
-  //         builder: (_) => SkinScorePage(
-  //           photo: widget.photo,
-  //           result: SkinScanUiResult.mock(),
-  //         ),
-  //       ),
-  //     );
-  //   });
-  // }
 
   @override
   void dispose() {
@@ -330,7 +302,7 @@ class _ScanningPageState extends State<ScanningPage>
 
   Future<void> _sendImageToBackend() async {
     try {
-      final uri = Uri.parse('http://192.168.1.11:8000/analyze-skin');
+      final uri = Uri.parse('http://192.168.1.17:8000/analyze-skin');
       final request = http.MultipartRequest('POST', uri);
 
       request.files.add(
@@ -355,7 +327,7 @@ class _ScanningPageState extends State<ScanningPage>
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => SkinScorePage(
+          builder: (_) => SkinProfilePage(
             photo: widget.photo,
             result: result,
           ),
@@ -367,7 +339,7 @@ class _ScanningPageState extends State<ScanningPage>
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => SkinScorePage(
+          builder: (_) => SkinProfilePage(
             photo: widget.photo,
             result: SkinScanUiResult.mock(),
           ),
@@ -443,83 +415,382 @@ class _ScanningPageState extends State<ScanningPage>
   }
 }
 
-class SkinScorePage extends StatelessWidget {
+class SkinProfilePage extends StatelessWidget {
   final File photo;
   final SkinScanUiResult result;
 
-  const SkinScorePage({super.key, required this.photo, required this.result});
+  const SkinProfilePage({
+    super.key,
+    required this.photo,
+    required this.result,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final metrics = result.metrics;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: [
-            const _ProgressHeader(progress: .72),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 30, 24, 24),
-                child: Column(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(22, 0, 22, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded),
+              ),
+              const SizedBox(height: 2),
+              Center(
+                child: Text(
+                  'Your Skin Analysis',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF25171C),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'here are the concerns detected from your photo.',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  height: 1.45,
+                  color: Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(.07),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: Row(
                   children: [
-                    Text(
-                      '${result.skinScore}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 58,
-                        fontWeight: FontWeight.w500,
-                        height: 1,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Image.file(
+                        photo,
+                        width: 118,
+                        height: 150,
+                        fit: BoxFit.cover,
                       ),
                     ),
-                    Text(
-                      'Your Skin Score',
-                      style: GoogleFonts.poppins(
-                        fontSize: 19,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF9E9E9E),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Skin Score',
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${result.skinScore}/100',
+                            style: GoogleFonts.poppins(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF5B2333),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            metrics.isEmpty
+                                ? 'No major concern detected'
+                                : '${metrics.length} concerns detected',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    Transform.translate(
-                      offset: const Offset(0, -20),
-                      child: Transform.scale(
-                        scale: 0.78,
-                        child: _ScoreArc(photo: photo, score: result.skinScore),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: result.metrics.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 14,
-                        mainAxisSpacing: 14,
-                        childAspectRatio: 1.35,
-                      ),
-                      itemBuilder: (_, i) =>
-                          _MetricCard(metric: result.metrics[i]),
                     ),
                   ],
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 10, 24, 24),
-              child: _PrimaryButton(
-                text: 'View Potential',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => PotentialRoutinePage(
-                        photo: photo,
-                        result: result,
+              const SizedBox(height: 26),
+              Text(
+                'Detected Concerns',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 14),
+              for (int i = 0; i < metrics.take(3).length; i++)
+                _PremiumConcernCard(
+                  metric: metrics[i],
+                  isMain: i == 0,
+                ),
+              if (metrics.length > 2)
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.white,
+                        builder: (_) => _FullConcernsSheet(metrics: metrics),
+                      );
+                    },
+                    child: Text(
+                      'View full analysis',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                        decoration: TextDecoration.underline,
                       ),
                     ),
-                  );
-                },
+                  ),
+                ),
+              const SizedBox(height: 20),
+              _InlineRoutineSection(result: result),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InlineRoutineSection extends StatelessWidget {
+  final SkinScanUiResult result;
+
+  const _InlineRoutineSection({required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Your personalized skincare routine',
+          style: GoogleFonts.poppins(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF25171C),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'This routine is based on the concerns detected from your photo.',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            height: 1.4,
+            color: Colors.black54,
+          ),
+        ),
+        const SizedBox(height: 20),
+        _RoutineGroup(
+          title: 'Morning',
+          steps: result.morningRoutine,
+          color: const Color(0xFF5B2333),
+        ),
+        const SizedBox(height: 22),
+        _RoutineGroup(
+          title: 'Evening',
+          steps: result.nightRoutine,
+          color: const Color(0xFF5B2333),
+        ),
+      ],
+    );
+  }
+}
+
+class _RoutineGroup extends StatelessWidget {
+  final String title;
+  final List<RoutineStep> steps;
+  final Color color;
+
+  const _RoutineGroup({
+    required this.title,
+    required this.steps,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (steps.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.poppins(
+            fontSize: 19,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 14),
+        for (int i = 0; i < steps.length; i++)
+          _CleanRoutineStepCard(
+            step: steps[i],
+            index: i,
+          ),
+      ],
+    );
+  }
+}
+
+class _CleanRoutineStepCard extends StatelessWidget {
+  final RoutineStep step;
+  final int index;
+
+  const _CleanRoutineStepCard({
+    required this.step,
+    required this.index,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE6E0DE)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(.035),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: Color(0xFF5B2333),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              '${index + 1}',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  step.name,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  step.why,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    height: 1.35,
+                    color: Colors.black54,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _SmallRoutineTag(text: step.category),
+                    _SmallRoutineTag(text: step.ingredient),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SmallRoutineTag extends StatelessWidget {
+  final String text;
+
+  const _SmallRoutineTag({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F4F3),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.poppins(
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          color: const Color(0xFF5B2333),
+        ),
+      ),
+    );
+  }
+}
+
+class _FullConcernsSheet extends StatelessWidget {
+  final List<SkinMetric> metrics;
+
+  const _FullConcernsSheet({required this.metrics});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.9,
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: const Icon(Icons.close_rounded, size: 28),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(26, 0, 26, 26),
+                children: [
+                  for (int i = 0; i < metrics.length; i++)
+                    _PremiumConcernCard(
+                      metric: metrics[i],
+                      isMain: i == 0,
+                    ),
+                ],
               ),
             ),
           ],
@@ -529,114 +800,372 @@ class SkinScorePage extends StatelessWidget {
   }
 }
 
-class PotentialRoutinePage extends StatelessWidget {
-  final File photo;
-  final SkinScanUiResult result;
+class _PremiumConcernCard extends StatelessWidget {
+  final SkinMetric metric;
+  final bool isMain;
 
-  const PotentialRoutinePage(
-      {super.key, required this.photo, required this.result});
+  const _PremiumConcernCard({
+    required this.metric,
+    required this.isMain,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final value = (metric.score / 10).toStringAsFixed(
+      metric.score % 10 == 0 ? 0 : 1,
+    );
+
+    return Container(
+      padding: const EdgeInsets.only(top: 8, bottom: 24),
+      margin: const EdgeInsets.only(bottom: 18),
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFE5E5E5)),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isMain)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF5B2333),
+                borderRadius: BorderRadius.circular(2),
+              ),
+              child: Text(
+                'Priority concern',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          if (isMain) const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  metric.name,
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+              Text(
+                '$value/10',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: List.generate(4, (i) {
+              final activeIndex = (metric.score / 25).floor().clamp(0, 3);
+
+              return Expanded(
+                child: Container(
+                  height: 4,
+                  margin: EdgeInsets.only(right: i == 3 ? 0 : 6),
+                  color: i == activeIndex
+                      ? const Color(0xFF5B2333)
+                      : const Color(0xFFE0E0E0),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _statusText(metric.score),
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _statusText(int score) {
+  if (score >= 70) return 'Needs care';
+  if (score >= 35) return 'Moderate';
+  return 'Good';
+}
+
+IconData _iconForConcern(String name) {
+  final n = name.toLowerCase();
+
+  if (n.contains('acne')) return Icons.bubble_chart_outlined;
+  if (n.contains('black')) return Icons.blur_circular_rounded;
+  if (n.contains('white')) return Icons.circle_outlined;
+  if (n.contains('pore')) return Icons.grain_rounded;
+  if (n.contains('freckle')) return Icons.auto_awesome;
+  if (n.contains('scar')) return Icons.healing_outlined;
+  if (n.contains('wrinkle')) return Icons.show_chart_rounded;
+  if (n.contains('dark')) return Icons.remove_red_eye_outlined;
+
+  return Icons.spa_outlined;
+}
+
+class PotentialRoutinePage extends StatefulWidget {
+  final File photo;
+  final SkinScanUiResult result;
+
+  const PotentialRoutinePage({
+    super.key,
+    required this.photo,
+    required this.result,
+  });
+
+  @override
+  State<PotentialRoutinePage> createState() => _PotentialRoutinePageState();
+}
+
+class _PotentialRoutinePageState extends State<PotentialRoutinePage> {
+  int selectedTab = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final steps = selectedTab == 0
+        ? widget.result.morningRoutine
+        : widget.result.nightRoutine;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF7F4F3),
       body: SafeArea(
         child: Column(
           children: [
-            const _ProgressHeader(progress: .95),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 10, 24, 130),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'My Routine',
+                    style: GoogleFonts.poppins(
+                      fontSize: 23,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF25171C),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 22),
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Row(
                   children: [
-                    Center(
-                      child: Column(
-                        children: [
-                          Text(
-                            '${result.potentialScore}',
-                            style: GoogleFonts.poppins(
-                              fontSize: 58,
-                              fontWeight: FontWeight.w500,
-                              height: 1,
-                            ),
-                          ),
-                          Text(
-                            'Your Potential!',
-                            style: GoogleFonts.poppins(
-                              fontSize: 19,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF9E9E9E),
-                            ),
-                          ),
-                          const SizedBox(height: 48),
-                          _ScoreArc(
-                              photo: photo,
-                              score: result.potentialScore,
-                              green: true),
-                        ],
-                      ),
+                    _RoutineTab(
+                      text: 'Morning',
+                      active: selectedTab == 0,
+                      onTap: () => setState(() => selectedTab = 0),
                     ),
-                    const SizedBox(height: 15),
-                    Transform.scale(
-                      scale: 0.9,
-                      child: _ReadyPlanCard(months: result.improvementTime),
-                    ),
-                    const SizedBox(height: 26),
-                    Text(
-                      ' your custom skin plan is ready',
-                      style: GoogleFonts.poppins(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        height: 1.18,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    _RoutineStepsCard(
-                      title: 'Your morning routine',
-                      icon: Icons.wb_sunny_outlined,
-                      steps: result.morningRoutine,
-                    ),
-                    const SizedBox(height: 16),
-                    _RoutineStepsCard(
-                      title: 'Your evening routine',
-                      icon: Icons.dark_mode_outlined,
-                      steps: result.nightRoutine,
+                    _RoutineTab(
+                      text: 'Evening',
+                      active: selectedTab == 1,
+                      onTap: () => setState(() => selectedTab = 1),
                     ),
                   ],
                 ),
               ),
             ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(22, 24, 22, 28),
+                children: [
+                  Text(
+                    selectedTab == 0
+                        ? 'Your morning care plan'
+                        : 'Your evening repair plan',
+                    style: GoogleFonts.poppins(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF25171C),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Routine steps are generated based on your detected skin concerns.',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      height: 1.45,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  for (int i = 0; i < steps.length; i++)
+                    _RoutineStepCard(step: steps[i], index: i),
+                ],
+              ),
+            ),
           ],
         ),
       ),
-      bottomNavigationBar: Container(
+    );
+  }
+}
+
+class _RoutineTab extends StatelessWidget {
+  final String text;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _RoutineTab({
+    required this.text,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          height: 46,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: active ? const Color(0xFF5B2333) : Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Text(
+            text,
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: active ? Colors.white : Colors.black54,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RoutineStepCard extends StatelessWidget {
+  final RoutineStep step;
+  final int index;
+
+  const _RoutineStepCard({
+    required this.step,
+    required this.index,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
         color: Colors.white,
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE9F8EF),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Center(
-                child: Text(
-                  'Start your transformation today',
-                  style: GoogleFonts.poppins(
-                    color: const Color(0xFF31C768),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(.045),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFF5B2333).withOpacity(.1),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              '${index + 1}',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF5B2333),
               ),
             ),
-            const SizedBox(height: 14),
-            _PrimaryButton(text: 'Build My Routine', onTap: () {}),
-          ],
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  step.name,
+                  style: GoogleFonts.poppins(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF25171C),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  step.why,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13.5,
+                    height: 1.45,
+                    color: Colors.black54,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _MiniTag(text: step.category),
+                    _MiniTag(text: step.ingredient),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniTag extends StatelessWidget {
+  final String text;
+
+  const _MiniTag({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F4F3),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.poppins(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF5B2333),
         ),
       ),
     );
@@ -1533,7 +2062,7 @@ class _RoutineCategoryProductsPageState
   Future<void> fetchProducts() async {
     try {
       final uri = Uri.parse(
-        'http://192.168.1.12:5000/api/products?category=${widget.category}',
+        'http://192.168.1.17:5000/api/products?category=${widget.category}',
       );
 
       final response = await http.get(uri);

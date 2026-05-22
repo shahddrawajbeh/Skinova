@@ -12,7 +12,7 @@ import '../medication_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = "http://192.168.1.12:5000";
+  static const String baseUrl = "http://192.168.1.17:5000";
   static Future<String?> uploadProfileImage({
     required String userId,
     required File imageFile,
